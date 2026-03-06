@@ -1,3 +1,4 @@
+// src/components/ui/DataTable.tsx
 "use client";
 
 import React, { useMemo, useState } from "react";
@@ -30,22 +31,15 @@ export function Tag({
   return <span className={cls}>{children}</span>;
 }
 
-/**
- * Backward-compatible ActionItem type used by older pages:
- * actions={(row): ActionItem<Row>[] => [{ label, onClick, disabled }]}
- */
 export type ActionItem<Row = any> = {
   label: React.ReactNode;
-  onClick?: (row: Row) => void;
+  onClick?: (row: Row) => void | Promise<void>;
+  onSelect?: (row: Row) => void | Promise<void>;
   href?: string | ((row: Row) => string);
   disabled?: boolean;
   danger?: boolean;
 };
 
-/**
- * Also export a value/component named ActionItem for compatibility
- * with non-type imports.
- */
 export function ActionItem({
   children,
   onClick,
@@ -316,6 +310,7 @@ export default function DataTable<Row>({
                           if (isActionItemObject<Row>(node)) {
                             const href =
                               typeof node.href === "function" ? node.href(row) : node.href;
+                            const actionFn = node.onClick || node.onSelect;
 
                             return (
                               <ActionItem
@@ -323,7 +318,7 @@ export default function DataTable<Row>({
                                 href={href}
                                 disabled={node.disabled}
                                 danger={node.danger}
-                                onClick={node.onClick ? () => node.onClick?.(row) : undefined}
+                                onClick={actionFn ? () => void actionFn(row) : undefined}
                               >
                                 {node.label}
                               </ActionItem>
