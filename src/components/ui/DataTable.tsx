@@ -5,45 +5,104 @@ import React, { useMemo, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 /**
- * Local cn helper (kept inline to avoid missing imports).
+ * Local cn helper to avoid missing utils imports.
  */
 function cn(...xs: Array<string | false | null | undefined>) {
   return xs.filter(Boolean).join(" ");
 }
 
 /**
- * ColumnDef is intentionally minimal and Blueprint-friendly.
- * NOTE: For backwards compatibility, DataTable also supports a legacy `render`
- * function on the column (alias of `cell`).
+ * Small pill/tag used across admin/users/projects/people pages.
  */
+export function Tag({
+  children,
+  tone = "default",
+}: {
+  children: React.ReactNode;
+  tone?: "default" | "success" | "warning" | "danger" | "info" | "muted";
+}) {
+  const cls =
+    tone === "success"
+      ? "pill ok"
+      : tone === "warning"
+      ? "pill warn"
+      : tone === "danger"
+      ? "pill danger"
+      : tone === "info"
+      ? "pill info"
+      : tone === "muted"
+      ? "pill"
+      : "pill";
+
+  return <span className={cls}>{children}</span>;
+}
+
+/**
+ * Compact row actions menu substitute used by existing pages.
+ * Keeps compatibility with older imports:
+ * import DataTable, { Tag, ActionItem } from ".../DataTable"
+ */
+export function ActionItem({
+  children,
+  onClick,
+  href,
+  disabled,
+  danger,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  href?: string;
+  disabled?: boolean;
+  danger?: boolean;
+}) {
+  const className = cn("pill", danger && "danger", disabled && "disabled");
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        className={className}
+        style={{
+          textDecoration: "none",
+          pointerEvents: disabled ? "none" : undefined,
+          opacity: disabled ? 0.6 : undefined,
+        }}
+      >
+        {children}
+      </a>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className={className}
+      onClick={onClick}
+      disabled={disabled}
+      style={{ cursor: disabled ? "not-allowed" : "pointer" }}
+    >
+      {children}
+    </button>
+  );
+}
+
 export type ColumnDef<Row> = {
-  id: string;
+  id?: string;
+  key?: string;
   header: React.ReactNode;
-  /** Primary cell renderer */
   cell?: (row: Row) => React.ReactNode;
-  /**
-   * Legacy alias used by some pages.
-   * If provided and `cell` is missing, DataTable will call this.
-   */
-  render?: (row: Row) => React.ReactNode;
+  render?: (row: Row) => React.ReactNode; // legacy alias
   className?: string;
   headerClassName?: string;
-  /** Optional sort accessor */
   sortValue?: (row: Row) => string | number | null | undefined;
 };
 
 type Props<Row> = {
   columns: ColumnDef<Row>[];
   rows: Row[];
-  /**
-   * Required by design, but we provide a safe fallback:
-   * - if row has `id` string -> uses it
-   * - else uses row index
-   */
   rowKey?: (row: Row, index: number) => string;
   selectedRowId?: string;
   onRowClick?: (row: Row) => void;
-  /** Optional toolbar slot */
   toolbarRight?: React.ReactNode;
   compact?: boolean;
 };
@@ -60,9 +119,19 @@ export default function DataTable<Row>({
   const [sortBy, setSortBy] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
+  const normalizedColumns = useMemo(
+    () =>
+      columns.map((c, i) => ({
+        ...c,
+        _id: c.id || c.key || `col_${i}`,
+      })),
+    [columns]
+  );
+
   const sortedRows = useMemo(() => {
     if (!sortBy) return rows;
-    const col = columns.find((c) => c.id === sortBy);
+
+    const col = normalizedColumns.find((c) => c._id === sortBy);
     if (!col?.sortValue) return rows;
 
     const dir = sortDir === "asc" ? 1 : -1;
@@ -80,13 +149,14 @@ export default function DataTable<Row>({
 
       const sa = String(va).toLowerCase();
       const sb = String(vb).toLowerCase();
+
       if (sa < sb) return -1 * dir;
       if (sa > sb) return 1 * dir;
       return 0;
     });
 
     return copy;
-  }, [rows, columns, sortBy, sortDir]);
+  }, [rows, normalizedColumns, sortBy, sortDir]);
 
   function keyFor(row: Row, index: number) {
     if (rowKey) return rowKey(row, index);
@@ -117,14 +187,15 @@ export default function DataTable<Row>({
         <table className="table">
           <thead>
             <tr>
-              {columns.map((c) => {
+              {normalizedColumns.map((c) => {
                 const sortable = !!c.sortValue;
-                const active = sortBy === c.id;
+                const active = sortBy === c._id;
+
                 return (
                   <th
-                    key={c.id}
+                    key={c._id}
                     className={cn(c.headerClassName, sortable && "sortable", active && "active")}
-                    onClick={sortable ? () => toggleSort(c.id) : undefined}
+                    onClick={sortable ? () => toggleSort(c._id) : undefined}
                     role={sortable ? "button" : undefined}
                     tabIndex={sortable ? 0 : undefined}
                   >
@@ -151,23 +222,21 @@ export default function DataTable<Row>({
           </thead>
 
           <tbody>
-            {sortedRows.map((r, idx) => {
-              const id = keyFor(r, idx);
+            {sortedRows.map((row, idx) => {
+              const id = keyFor(row, idx);
               const selected = !!selectedRowId && selectedRowId === id;
 
               return (
                 <tr
                   key={id}
                   className={cn(selected && "selected", onRowClick && "clickable")}
-                  onClick={onRowClick ? () => onRowClick(r) : undefined}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
                 >
-                  {columns.map((c) => {
+                  {normalizedColumns.map((c) => {
                     const renderer = c.cell || c.render;
-                    const cell = renderer ? renderer(r) : null;
-
                     return (
-                      <td key={c.id} className={cn(c.className)}>
-                        {cell}
+                      <td key={c._id} className={cn(c.className)}>
+                        {renderer ? renderer(row) : null}
                       </td>
                     );
                   })}
