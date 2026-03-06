@@ -95,6 +95,12 @@ type Props<Row> = {
   onRowClick?: (row: Row) => void;
   toolbarRight?: React.ReactNode;
   compact?: boolean;
+
+  // Backward-compat props used by older pages
+  loading?: boolean;
+  emptyTitle?: string;
+  emptySubtitle?: string;
+  actions?: (row: Row) => React.ReactNode[] | React.ReactNode;
 };
 
 export default function DataTable<Row>({
@@ -105,6 +111,10 @@ export default function DataTable<Row>({
   onRowClick,
   toolbarRight,
   compact,
+  loading = false,
+  emptyTitle = "No records",
+  emptySubtitle = "Nothing to show yet.",
+  actions,
 }: Props<Row>) {
   const [sortBy, setSortBy] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -117,6 +127,8 @@ export default function DataTable<Row>({
       })),
     [columns]
   );
+
+  const hasActions = !!actions;
 
   const sortedRows = useMemo(() => {
     if (!sortBy) return rows;
@@ -170,6 +182,39 @@ export default function DataTable<Row>({
     return { width: value };
   }
 
+  if (loading) {
+    return (
+      <div className={cn("card", compact && "tableCompact")}>
+        {toolbarRight ? (
+          <div className="tableToolbar">
+            <div />
+            <div>{toolbarRight}</div>
+          </div>
+        ) : null}
+        <div className="cardPad">
+          <div className="muted">Loading…</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!sortedRows.length) {
+    return (
+      <div className={cn("card", compact && "tableCompact")}>
+        {toolbarRight ? (
+          <div className="tableToolbar">
+            <div />
+            <div>{toolbarRight}</div>
+          </div>
+        ) : null}
+        <div className="cardPad">
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>{emptyTitle}</div>
+          <div className="muted">{emptySubtitle}</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cn("card", compact && "tableCompact")}>
       {toolbarRight ? (
@@ -215,6 +260,7 @@ export default function DataTable<Row>({
                   </th>
                 );
               })}
+              {hasActions ? <th style={{ width: 1 }} /> : null}
             </tr>
           </thead>
 
@@ -222,6 +268,12 @@ export default function DataTable<Row>({
             {sortedRows.map((row, idx) => {
               const id = keyFor(row, idx);
               const selected = !!selectedRowId && selectedRowId === id;
+              const rowActions = actions ? actions(row) : null;
+              const rowActionsArray = Array.isArray(rowActions)
+                ? rowActions
+                : rowActions
+                ? [rowActions]
+                : [];
 
               return (
                 <tr
@@ -237,6 +289,15 @@ export default function DataTable<Row>({
                       </td>
                     );
                   })}
+                  {hasActions ? (
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      <div className="row" style={{ gap: 8, justifyContent: "flex-end" }}>
+                        {rowActionsArray.map((node, i) => (
+                          <React.Fragment key={i}>{node}</React.Fragment>
+                        ))}
+                      </div>
+                    </td>
+                  ) : null}
                 </tr>
               );
             })}
