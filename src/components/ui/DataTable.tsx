@@ -3,7 +3,13 @@
 
 import React, { useMemo, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { cn } from "../../lib/utils";
+
+/**
+ * Local cn helper (kept inline to avoid missing imports).
+ */
+function cn(...xs: Array<string | false | null | undefined>) {
+  return xs.filter(Boolean).join(" ");
+}
 
 /**
  * ColumnDef is intentionally minimal and Blueprint-friendly.
@@ -39,91 +45,105 @@ type Props<Row> = {
   onRowClick?: (row: Row) => void;
   /** Optional toolbar slot */
   toolbarRight?: React.ReactNode;
-  /** Blueprint: compact density */
   compact?: boolean;
-  /** Empty state */
-  empty?: React.ReactNode;
 };
-
-function defaultRowKey<Row>(row: Row, index: number) {
-  const anyRow = row as any;
-  if (typeof anyRow?.id === "string" && anyRow.id) return anyRow.id;
-  return String(index);
-}
 
 export default function DataTable<Row>({
   columns,
   rows,
-  rowKey = defaultRowKey,
+  rowKey,
   selectedRowId,
   onRowClick,
   toolbarRight,
   compact,
-  empty,
 }: Props<Row>) {
-  const [sortId, setSortId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
-  const sorted = useMemo(() => {
-    if (!sortId) return rows;
-    const col = columns.find(c => c.id === sortId);
+  const sortedRows = useMemo(() => {
+    if (!sortBy) return rows;
+    const col = columns.find((c) => c.id === sortBy);
     if (!col?.sortValue) return rows;
-    const dir = sortDir === "asc" ? 1 : -1;
-    return [...rows].sort((a, b) => {
-      const av = col.sortValue!(a);
-      const bv = col.sortValue!(b);
-      if (av == null && bv == null) return 0;
-      if (av == null) return 1;
-      if (bv == null) return -1;
-      if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir;
-      return String(av).localeCompare(String(bv)) * dir;
-    });
-  }, [rows, columns, sortId, sortDir]);
 
-  const onSort = (id: string) => {
-    if (sortId !== id) {
-      setSortId(id);
+    const dir = sortDir === "asc" ? 1 : -1;
+    const copy = [...rows];
+
+    copy.sort((a, b) => {
+      const va = col.sortValue!(a);
+      const vb = col.sortValue!(b);
+
+      if (va == null && vb == null) return 0;
+      if (va == null) return -1 * dir;
+      if (vb == null) return 1 * dir;
+
+      if (typeof va === "number" && typeof vb === "number") return (va - vb) * dir;
+
+      const sa = String(va).toLowerCase();
+      const sb = String(vb).toLowerCase();
+      if (sa < sb) return -1 * dir;
+      if (sa > sb) return 1 * dir;
+      return 0;
+    });
+
+    return copy;
+  }, [rows, columns, sortBy, sortDir]);
+
+  function keyFor(row: Row, index: number) {
+    if (rowKey) return rowKey(row, index);
+    const anyRow = row as any;
+    if (anyRow && typeof anyRow.id === "string") return anyRow.id;
+    return String(index);
+  }
+
+  function toggleSort(colId: string) {
+    if (sortBy !== colId) {
+      setSortBy(colId);
       setSortDir("asc");
       return;
     }
-    setSortDir(d => (d === "asc" ? "desc" : "asc"));
-  };
-
-  if (!sorted.length) {
-    return (
-      <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] shadow-sm p-6">
-        {empty || <div className="text-sm text-[color:var(--muted-foreground)]">No records.</div>}
-      </div>
-    );
+    setSortDir((d) => (d === "asc" ? "desc" : "asc"));
   }
 
   return (
-    <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-[color:var(--border)]">
-        <div className="text-sm text-[color:var(--muted-foreground)]">{rows.length} rows</div>
-        <div>{toolbarRight}</div>
-      </div>
+    <div className={cn("card", compact && "tableCompact")}>
+      {toolbarRight ? (
+        <div className="tableToolbar">
+          <div />
+          <div>{toolbarRight}</div>
+        </div>
+      ) : null}
 
-      <div className="w-full overflow-auto">
-        <table className={cn("w-full text-sm", compact && "text-[13px]")}>
-          <thead className="bg-[color:var(--muted)]/30">
+      <div className="tableWrap">
+        <table className="table">
+          <thead>
             <tr>
-              {columns.map(col => {
-                const sortable = !!col.sortValue;
+              {columns.map((c) => {
+                const sortable = !!c.sortValue;
+                const active = sortBy === c.id;
                 return (
                   <th
-                    key={col.id}
-                    className={cn(
-                      "text-left font-semibold px-4 py-3 border-b border-[color:var(--border)] whitespace-nowrap",
-                      col.headerClassName,
-                      sortable && "cursor-pointer select-none"
-                    )}
-                    onClick={sortable ? () => onSort(col.id) : undefined}
+                    key={c.id}
+                    className={cn(c.headerClassName, sortable && "sortable", active && "active")}
+                    onClick={sortable ? () => toggleSort(c.id) : undefined}
+                    role={sortable ? "button" : undefined}
+                    tabIndex={sortable ? 0 : undefined}
                   >
-                    <span className="inline-flex items-center gap-1">
-                      {col.header}
-                      {sortable && sortId === col.id && (sortDir === "asc" ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
-                    </span>
+                    <div className="thInner">
+                      <span>{c.header}</span>
+                      {sortable ? (
+                        <span className="sortIcon">
+                          {active ? (
+                            sortDir === "asc" ? (
+                              <ChevronUp size={14} />
+                            ) : (
+                              <ChevronDown size={14} />
+                            )
+                          ) : (
+                            <ChevronDown size={14} className="muted" />
+                          )}
+                        </span>
+                      ) : null}
+                    </div>
                   </th>
                 );
               })}
@@ -131,24 +151,23 @@ export default function DataTable<Row>({
           </thead>
 
           <tbody>
-            {sorted.map((row, idx) => {
-              const id = rowKey(row, idx);
-              const selected = selectedRowId && selectedRowId === id;
+            {sortedRows.map((r, idx) => {
+              const id = keyFor(r, idx);
+              const selected = !!selectedRowId && selectedRowId === id;
+
               return (
                 <tr
                   key={id}
-                  className={cn(
-                    "border-b border-[color:var(--border)] last:border-b-0",
-                    onRowClick && "cursor-pointer hover:bg-[color:var(--muted)]/20",
-                    selected && "bg-[color:var(--muted)]/25"
-                  )}
-                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  className={cn(selected && "selected", onRowClick && "clickable")}
+                  onClick={onRowClick ? () => onRowClick(r) : undefined}
                 >
-                  {columns.map(col => {
-                    const cellFn = col.cell || (col as any).render;
+                  {columns.map((c) => {
+                    const renderer = c.cell || c.render;
+                    const cell = renderer ? renderer(r) : null;
+
                     return (
-                      <td key={col.id} className={cn("px-4 py-3 align-top", col.className)}>
-                        {cellFn ? cellFn(row) : null}
+                      <td key={c.id} className={cn(c.className)}>
+                        {cell}
                       </td>
                     );
                   })}
