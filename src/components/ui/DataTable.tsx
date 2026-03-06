@@ -4,16 +4,10 @@
 import React, { useMemo, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
-/**
- * Local cn helper to avoid missing utils imports.
- */
 function cn(...xs: Array<string | false | null | undefined>) {
   return xs.filter(Boolean).join(" ");
 }
 
-/**
- * Small pill/tag used across admin/users/projects/people pages.
- */
 export function Tag({
   children,
   tone = "default",
@@ -37,11 +31,6 @@ export function Tag({
   return <span className={cls}>{children}</span>;
 }
 
-/**
- * Compact row actions menu substitute used by existing pages.
- * Keeps compatibility with older imports:
- * import DataTable, { Tag, ActionItem } from ".../DataTable"
- */
 export function ActionItem({
   children,
   onClick,
@@ -91,10 +80,11 @@ export type ColumnDef<Row> = {
   key?: string;
   header: React.ReactNode;
   cell?: (row: Row) => React.ReactNode;
-  render?: (row: Row) => React.ReactNode; // legacy alias
+  render?: (row: Row) => React.ReactNode;
   className?: string;
   headerClassName?: string;
   sortValue?: (row: Row) => string | number | null | undefined;
+  width?: number | string;
 };
 
 type Props<Row> = {
@@ -174,6 +164,12 @@ export default function DataTable<Row>({
     setSortDir((d) => (d === "asc" ? "desc" : "asc"));
   }
 
+  function widthStyle(width?: number | string): React.CSSProperties | undefined {
+    if (width == null) return undefined;
+    const value = typeof width === "number" ? `${width}px` : width;
+    return { width: value };
+  }
+
   return (
     <div className={cn("card", compact && "tableCompact")}>
       {toolbarRight ? (
@@ -198,6 +194,7 @@ export default function DataTable<Row>({
                     onClick={sortable ? () => toggleSort(c._id) : undefined}
                     role={sortable ? "button" : undefined}
                     tabIndex={sortable ? 0 : undefined}
+                    style={widthStyle(c.width)}
                   >
                     <div className="thInner">
                       <span>{c.header}</span>
@@ -235,7 +232,7 @@ export default function DataTable<Row>({
                   {normalizedColumns.map((c) => {
                     const renderer = c.cell || c.render;
                     return (
-                      <td key={c._id} className={cn(c.className)}>
+                      <td key={c._id} className={cn(c.className)} style={widthStyle(c.width)}>
                         {renderer ? renderer(row) : null}
                       </td>
                     );
