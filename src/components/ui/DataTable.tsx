@@ -1,4 +1,3 @@
-// src/components/ui/DataTable.tsx
 "use client";
 
 import React, { useMemo, useState } from "react";
@@ -13,7 +12,7 @@ export function Tag({
   tone = "default",
 }: {
   children: React.ReactNode;
-  tone?: "default" | "success" | "warn" | "warning" | "danger" | "info" | "muted";
+  tone?: "default" | "success" | "warn" | "warning" | "danger" | "info" | "muted" | string;
 }) {
   const cls =
     tone === "success"
@@ -36,6 +35,7 @@ export type ActionItem<Row = any> = {
   href?: string | ((row: Row) => string);
   disabled?: boolean;
   danger?: boolean;
+  [key: string]: any;
 };
 
 export function ActionItem({
@@ -93,6 +93,7 @@ export type ColumnDef<Row> = {
   sortValue?: (row: Row) => string | number | null | undefined;
   width?: number | string;
   align?: "left" | "center" | "right";
+  [key: string]: any;
 };
 
 type Props<Row> = {
@@ -107,6 +108,7 @@ type Props<Row> = {
   emptyTitle?: string;
   emptySubtitle?: string;
   actions?: (row: Row) => Array<ActionItem<Row> | React.ReactNode> | React.ReactNode;
+  [key: string]: any;
 };
 
 export default function DataTable<Row>({
