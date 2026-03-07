@@ -1,0 +1,312 @@
+.setu-card {
+  background: var(--surface, var(--setu-surface));
+  border: 1px solid var(--border, var(--setu-border));
+  border-radius: var(--radius, var(--radius-card));
+  box-shadow: var(--shadow-sm, var(--shadow-card));
+}
+
+.setu-cardHeader {
+  padding: 16px 16px 0 16px;
+}
+
+.setu-cardBody {
+  padding: 16px;
+}
+
+/* -----------------------------
+   Shared inputs
+------------------------------ */
+
+.input,
+select.input,
+textarea.input,
+input.input {
+  width: 100%;
+  min-height: 40px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: var(--control-radius, 12px);
+  border: 1px solid var(--border, var(--setu-border));
+  background: #ffffff;
+  color: var(--text, var(--setu-text));
+  outline: none;
+  box-shadow: none;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+textarea.input {
+  min-height: 96px;
+  height: auto;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.input::placeholder,
+textarea.input::placeholder {
+  color: var(--muted, var(--setu-muted));
+}
+
+.input:hover,
+select.input:hover,
+textarea.input:hover,
+input.input:hover {
+  border-color: rgba(36, 59, 107, 0.24);
+}
+
+.input:focus,
+select.input:focus,
+textarea.input:focus,
+input.input:focus {
+  border-color: rgba(244, 122, 31, 0.55);
+  box-shadow: 0 0 0 3px rgba(244, 122, 31, 0.16);
+}
+
+select.input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 38px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #6b7280 50%),
+    linear-gradient(135deg, #6b7280 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 2px),
+    calc(100% - 12px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+html[data-theme="dark"] .input,
+html[data-theme="dark"] select.input,
+html[data-theme="dark"] textarea.input,
+html[data-theme="dark"] input.input {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text, var(--setu-text));
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+html[data-theme="dark"] .input::placeholder,
+html[data-theme="dark"] textarea.input::placeholder {
+  color: var(--muted, var(--setu-muted));
+}
+
+html[data-theme="dark"] select.input {
+  background-image:
+    linear-gradient(45deg, transparent 50%, #c7cbd1 50%),
+    linear-gradient(135deg, #c7cbd1 50%, transparent 50%);
+}
+
+/* -----------------------------
+   Buttons
+------------------------------ */
+
+.btn {
+  min-height: 40px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border, var(--setu-border));
+  background: var(--surface, var(--setu-surface));
+  color: var(--text, var(--setu-text));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.02s ease,
+    box-shadow 0.18s ease;
+}
+
+.btn:hover {
+  border-color: rgba(36, 59, 107, 0.22);
+  background: rgba(36, 59, 107, 0.04);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btnPrimary {
+  background: var(--setu-saffron-600, #f47a1f);
+  border-color: var(--setu-saffron-600, #f47a1f);
+  color: #ffffff;
+}
+
+.btnPrimary:hover {
+  background: #dd6c18;
+  border-color: #dd6c18;
+}
+
+.btnSecondary {
+  background: #ffffff;
+  border-color: var(--border, var(--setu-border));
+  color: var(--text, var(--setu-text));
+}
+
+.btnSecondary:hover {
+  background: rgba(36, 59, 107, 0.04);
+  border-color: rgba(36, 59, 107, 0.18);
+}
+
+.btnGhost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text, var(--setu-text));
+}
+
+.btnGhost:hover {
+  background: rgba(36, 59, 107, 0.06);
+  border-color: transparent;
+}
+
+.btnDanger {
+  background: rgba(220, 38, 38, 0.08);
+  border-color: rgba(220, 38, 38, 0.2);
+  color: var(--danger, var(--setu-danger));
+}
+
+.btnDanger:hover {
+  background: rgba(220, 38, 38, 0.12);
+  border-color: rgba(220, 38, 38, 0.28);
+}
+
+.btnSm {
+  min-height: 34px;
+  height: 34px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.btnMd {
+  min-height: 40px;
+  height: 40px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+.btnLoading {
+  opacity: 0.7;
+}
+
+.btnIcon,
+.btnLabel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* -----------------------------
+   Pills / statuses
+------------------------------ */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(15, 23, 42, 0.04);
+  color: var(--text, var(--setu-text));
+  white-space: nowrap;
+}
+
+.pill.ok {
+  background: rgba(22, 163, 74, 0.12);
+  border-color: rgba(22, 163, 74, 0.22);
+  color: #166534;
+}
+
+.pill.warn {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(245, 158, 11, 0.26);
+  color: #92400e;
+}
+
+.pillDraft {
+  background: rgba(107, 114, 128, 0.15);
+  color: var(--text, var(--setu-text));
+}
+
+.pillLocked {
+  background: rgba(245, 158, 11, 0.22);
+  color: var(--text, var(--setu-text));
+}
+
+.pillPaid {
+  background: var(--setu-success, #16a34a);
+  color: #ffffff;
+}
+
+.pillError {
+  background: var(--danger, var(--setu-danger));
+  color: #ffffff;
+}
+
+/* -----------------------------
+   Tables
+------------------------------ */
+
+.tableWrap {
+  overflow: auto;
+  border-radius: var(--radius, var(--radius-card));
+  border: 1px solid var(--border, var(--setu-border));
+  background: var(--surface, var(--setu-surface));
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+  background: transparent;
+}
+
+.table th,
+.table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border, var(--setu-border));
+  font-size: 13px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.table th {
+  font-weight: 800;
+  color: var(--text, var(--setu-text));
+  background: rgba(229, 231, 235, 0.35);
+}
+
+.table td {
+  color: var(--text, var(--setu-text));
+}
+
+.table tbody tr:hover td {
+  background: rgba(36, 59, 107, 0.025);
+}
+
+html[data-theme="dark"] .table th {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+html[data-theme="dark"] .table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
+}

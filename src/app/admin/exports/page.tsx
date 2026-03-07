@@ -1,4 +1,3 @@
-// src/app/admin/exports/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -17,27 +16,33 @@ type ExportReceipt = {
   created_at: string;
   created_by: string | null;
   actor_name: string | null;
-
   type: string;
   label: string | null;
-
   project_id: string | null;
+  project_name?: string | null;
   payroll_run_id: string | null;
-
   project_export_id?: string | null;
-
   payload_hash: string | null;
   diff_status: "same" | "changed" | "unknown" | null;
-
   meta: any;
 };
 
 type Row = ExportReceipt;
 
-function DiffBadge({ status }: { status: Row["diff_status"] }) {
-  const text = status === "same" ? "No changes" : status === "changed" ? "Changed" : "Unknown";
-  const cls = status === "changed" ? "pill warn" : status === "same" ? "pill ok" : "pill";
-  return <span className={cls}>{text}</span>;
+function DiffBadge({ row }: { row: Row }) {
+  const status = row.diff_status || "unknown";
+  const text = row.meta?.diff_status_label || (status === "same" ? "Matches previous" : status === "changed" ? "Updated" : "Baseline export");
+  return <span className={`pill setuDiffChip ${status}`}>{text}</span>;
+}
+
+function ReceiptBadge({ row }: { row: Row }) {
+  const label = row.meta?.receipt_status_label || "Receipt";
+  const cls = row.meta?.is_paid ? "pill ok" : row.project_export_id ? "pill warn" : "pill";
+  return <span className={cls}>{label}</span>;
+}
+
+function money(amount: number, currency = "USD") {
+  return `${currency} ${Number(amount || 0).toFixed(2)}`;
 }
 
 export default function AdminExportsPage() {
@@ -51,39 +56,45 @@ export default function AdminExportsPage() {
       [
         {
           key: "label",
-          header: "Export",
+          header: "Receipt",
           render: (r: Row) => (
-            <div>
-              <div style={{ fontWeight: 650 }}>{r.label || r.type}</div>
-              <div className="muted" style={{ marginTop: 2 }}>
-                {r.type}
-              </div>
+            <div className="setuReceiptStack">
+              <div className="setuExportTitle">{r.label || r.type}</div>
+              <div className="setuExportMeta">{r.type} • {r.meta?.file_format?.toUpperCase?.() || "FILE"} • {r.meta?.scope || "org"}</div>
             </div>
           ),
         },
         {
           key: "project_id",
-          header: "Project",
+          header: "Project / Period",
           render: (r: Row) => (
-            <div className="muted" style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>
-              {r.project_id || "—"}
+            <div className="setuReceiptStack">
+              <div style={{ fontWeight: 800 }}>{r.project_name || r.project_id || "Org-level export"}</div>
+              <div className="setuMiniHint">{r.meta?.period_label || "No period linked"}</div>
+              {r.meta?.total_amount ? <div className="setuMiniHint">{money(Number(r.meta.total_amount || 0), r.meta?.currency || "USD")} • {Number(r.meta?.total_hours || 0).toFixed(2)} hrs</div> : null}
             </div>
           ),
         },
         {
-          key: "diff_status",
-          header: "Diff",
-          render: (r: Row) => <DiffBadge status={r.diff_status} />,
+          key: "statuses",
+          header: "Status",
+          render: (r: Row) => (
+            <div className="setuStatusStack">
+              <ReceiptBadge row={r} />
+              <DiffBadge row={r} />
+              {r.meta?.payroll_run_status ? <span className="setuMiniHint">Run: {r.meta.payroll_run_status}</span> : null}
+            </div>
+          ),
         },
         {
           key: "created_at",
           header: "Created",
-          render: (r: Row) => <div className="muted">{new Date(r.created_at).toLocaleString()}</div>,
-        },
-        {
-          key: "actor_name",
-          header: "By",
-          render: (r: Row) => <div>{r.actor_name || r.created_by || "—"}</div>,
+          render: (r: Row) => (
+            <div className="setuReceiptStack">
+              <div>{new Date(r.created_at).toLocaleString()}</div>
+              <div className="setuMiniHint">By {r.actor_name || r.created_by || "—"}</div>
+            </div>
+          ),
         },
         {
           key: "actions",
@@ -122,10 +133,17 @@ export default function AdminExportsPage() {
     load();
   }, []);
 
+  const totals = useMemo(() => {
+    const linked = rows.filter((row) => !!row.project_export_id).length;
+    const paid = rows.filter((row) => !!row.meta?.is_paid).length;
+    const changed = rows.filter((row) => row.diff_status === "changed").length;
+    return { linked, paid, changed };
+  }, [rows]);
+
   return (
     <AppShell
       title="Exports"
-      subtitle="Receipts & history"
+      subtitle="Audit receipts, client export linkage, and paid-state history across payroll operations."
       right={
         <div className="row" style={{ gap: 10 }}>
           <Button variant="secondary" onClick={load} disabled={loading}>
@@ -134,8 +152,31 @@ export default function AdminExportsPage() {
         </div>
       }
     >
-      <div style={{ maxWidth: 1200 }}>
+      <div style={{ maxWidth: 1280 }}>
         <AdminTabs active="exports" />
+
+        <div className="setuCompareGrid" style={{ marginTop: 12 }}>
+          <div className="setuCompareCard setuCompareCardPrimary">
+            <div className="setuCompareLabel">Total receipts</div>
+            <div className="setuCompareValue">{rows.length}</div>
+            <div className="setuCompareMeta">All export receipts in org scope</div>
+          </div>
+          <div className="setuCompareCard">
+            <div className="setuCompareLabel">Linked to project exports</div>
+            <div className="setuCompareValue">{totals.linked}</div>
+            <div className="setuCompareMeta">End-to-end project export tracking</div>
+          </div>
+          <div className="setuCompareCard">
+            <div className="setuCompareLabel">Paid receipts</div>
+            <div className="setuCompareValue">{totals.paid}</div>
+            <div className="setuCompareMeta">Receipts attached to paid project exports</div>
+          </div>
+          <div className="setuCompareCard">
+            <div className="setuCompareLabel">Updated payloads</div>
+            <div className="setuCompareValue">{totals.changed}</div>
+            <div className="setuCompareMeta">Exports that differ from prior payloads</div>
+          </div>
+        </div>
 
         <div style={{ marginTop: 12 }}>
           {loading ? (
@@ -145,7 +186,9 @@ export default function AdminExportsPage() {
           ) : rows.length === 0 ? (
             <EmptyState title="No exports yet" description="Export receipts will appear here when you generate reports." />
           ) : (
-            <DataTable rows={rows} columns={columns} rowKey={(r: Row) => r.id} />
+            <div className="setuExportTable">
+              <DataTable rows={rows} columns={columns} rowKey={(r: Row) => r.id} />
+            </div>
           )}
         </div>
 

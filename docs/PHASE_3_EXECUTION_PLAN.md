@@ -115,3 +115,21 @@ Recommended:
 - `NEXT_PUBLIC_APP_URL` (preferred)
 - `NEXT_PUBLIC_SETUE_URL` (legacy fallback currently used in invite flow)
 
+
+---
+
+## March 6, 2026 cleanup pass
+
+This cleanup pass focused on stabilizing the `src/app` codebase and removing regressions introduced by incompatible shared-component changes.
+
+Completed in this pass:
+- Rebuilt `src/components/ui/DataTable.tsx` to support both old and new table calling conventions used across Admin, Projects, Profiles, and Reports pages.
+- Rebuilt `src/components/ui/ExportReceiptDrawer.tsx` so it has one canonical exported `ExportReceipt` type and a complete paid-status flow.
+- Fixed `src/app/api/payroll/summary/route.ts` to use the role gate correctly via `gate.profile.org_id`.
+- Added `src/styles/tokens.css` and `src/styles/components.css` and imported them globally from `src/app/globals.css`.
+- Updated shell token sizing to the SETU target layout (`270px` sidebar, `84px` header).
+
+Known next-day priorities:
+1. Run a final build verification pass in the deployment repo and remove any stale duplicate route files that may still exist outside `src/app` in GitHub.
+2. Refactor Payroll Runs and Payroll Detail to use shared `.setu-card`, `.btn`, `.pill*`, and `.table*` classes more consistently.
+3. Add a small internal QA checklist to validate exports, paid status, and appearance modes after deployment.

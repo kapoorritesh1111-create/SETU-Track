@@ -116,3 +116,34 @@ Focus: interaction polish + guardrails so exports feel “client deliverable” 
   - [ ] UI displays “Paid on … by …” + note
 - [ ] Console error hygiene
   - [ ] No 404s on Payroll/Payroll Runs (common: `/api/payroll/period-diff`)
+
+## March 6, 2026 stabilization notes
+- Shared table compatibility restored (`DataTable` supports legacy and current props).
+- Export receipt drawer rebuilt and wired to project-export paid endpoint.
+- Payroll summary API corrected to use manager/admin gate profile values.
+- Global SETU token files added and imported.
+- Before next release: confirm GitHub repo does not contain any duplicate root `app/*` routes outside `src/app`.
+
+
+## 2026-03-06 Stabilization Pass
+
+- [x] Remove stale duplicate payroll runs client file
+- [x] Keep active application under `src/app` only
+- [x] Fix payroll summary loading against `project_exports`
+- [x] Add persisted totals migration for project exports
+- [x] Save project export totals during payroll client export generation
+- [x] Normalize payroll run detail API response (`is_paid`, `lines`, `receipts`)
+- [x] Add visible paid/unpaid controls on payroll runs list and detail
+- [x] Re-apply SETU shell styling to sidebar active states and navigation
+- [ ] Run migration in Supabase
+- [ ] Run local/Vercel production build validation after dependency install
+
+
+## 2026-03-06 Payroll Report V3
+- [x] Payroll Report supports By Project / By Contractor / Register views
+- [x] Payroll Report filters support Current Week / Last Week / Current Month / Last Month / Custom Range
+- [x] Payroll Report supports Closed only / Open + Closed scope
+- [x] Contractor summaries include admins/managers who logged time when visible in access scope
+- [x] Payroll summary API returns KPI/trend/summary/register payload in one response
+- [ ] Validate manager-only visibility against real org/project assignment data
+- [ ] Confirm paid/unpaid action from Payroll register updates linked export rows correctly in production

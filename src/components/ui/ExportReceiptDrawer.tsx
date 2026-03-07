@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { CheckCircle2, Copy, ExternalLink, Loader2, X } from "lucide-react";
 import Button from "./Button";
 import { Card } from "./Card";
-import { CheckCircle2, Copy, ExternalLink, Loader2, X } from "lucide-react";
 import { apiJson } from "../../lib/api/client";
 
 export type ExportReceipt = {
@@ -36,6 +36,12 @@ type Props = {
   receipt: ExportReceipt | null;
 };
 
+function diffText(status?: string | null) {
+  if (status === "same") return "Matches previous payload";
+  if (status === "changed") return "Payload changed from previous export";
+  return "Baseline or unmatched payload";
+}
+
 export default function ExportReceiptDrawer({ open, onClose, receipt }: Props) {
   const r = receipt;
   const [busy, setBusy] = useState(false);
@@ -46,38 +52,43 @@ export default function ExportReceiptDrawer({ open, onClose, receipt }: Props) {
   const canTogglePaid = useMemo(() => isProjectLinked, [isProjectLinked]);
 
   useEffect(() => {
-    setPaid(null);
     setCopyOk(false);
     setBusy(false);
-  }, [r?.id, open]);
+    const initialPaid = r?.meta && typeof r.meta === "object"
+      ? {
+          id: r.project_export_id || r.id,
+          is_paid: !!r.meta.is_paid || !!r.meta.paid_at,
+          paid_by: r.meta.paid_by || null,
+          paid_at: r.meta.paid_at || null,
+          paid_note: r.meta.paid_note || "",
+        }
+      : null;
+    setPaid(initialPaid);
+  }, [r?.id, r?.project_export_id, open]);
 
   async function copyReceiptId() {
     if (!r?.id) return;
     try {
       await navigator.clipboard.writeText(r.id);
       setCopyOk(true);
-      setTimeout(() => setCopyOk(false), 900);
+      window.setTimeout(() => setCopyOk(false), 900);
     } catch {
-      // ignore clipboard errors
+      // ignore clipboard failures
     }
   }
 
   async function togglePaid(nextPaid: boolean) {
     if (!r?.project_id || !r?.project_export_id) return;
-    const note = nextPaid ? window.prompt("Paid note (optional)") : null;
-
+    const note = nextPaid ? window.prompt("Paid note (optional)", paid?.paid_note || "") ?? "" : "";
     setBusy(true);
     try {
-      const res = await apiJson<{ ok?: boolean; export?: PaidState }>(
-        `/api/projects/${encodeURIComponent(r.project_id)}/exports/${encodeURIComponent(r.project_export_id)}/paid`,
-        {
-          method: "POST",
-          body: { is_paid: nextPaid, paid_note: note || "" },
-        }
-      );
-      if (res?.export) setPaid(res.export);
-    } catch {
-      // keep drawer usable even if paid route is unavailable
+      const json = await apiJson<{ ok: boolean; export: PaidState }>(`/api/projects/${encodeURIComponent(r.project_id)}/exports/${encodeURIComponent(r.project_export_id)}/paid`, {
+        method: "POST",
+        body: { is_paid: nextPaid, paid_note: note },
+      });
+      if (json?.ok && json.export) setPaid(json.export);
+    } catch (e: any) {
+      alert(e?.message || "Failed to update paid status.");
     } finally {
       setBusy(false);
     }
@@ -98,9 +109,7 @@ export default function ExportReceiptDrawer({ open, onClose, receipt }: Props) {
         <div className="drawerHeader">
           <div>
             <div style={{ fontWeight: 700, fontSize: 16 }}>Export Receipt</div>
-            <div className="muted" style={{ marginTop: 2 }}>
-              Official record of an export action
-            </div>
+            <div className="muted" style={{ marginTop: 2 }}>Official record of an export action and its linked project receipt state.</div>
           </div>
           <button className="iconBtn" onClick={onClose} aria-label="Close">
             <X size={18} />
@@ -109,98 +118,76 @@ export default function ExportReceiptDrawer({ open, onClose, receipt }: Props) {
 
         <div className="drawerBody">
           {!r ? (
-            <div className="card cardPad">
-              <div className="muted">No receipt selected.</div>
-            </div>
+            <div className="card cardPad"><div className="muted">No receipt selected.</div></div>
           ) : (
             <>
-              <Card>
-                <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+              <div className="setuReceiptHero">
+                <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
                   <div>
-                    <div style={{ fontWeight: 650 }}>{r.label || r.type || "Export"}</div>
-                    <div className="muted" style={{ marginTop: 4 }}>
-                      {r.created_at ? new Date(r.created_at).toLocaleString() : "—"}
-                    </div>
+                    <div style={{ fontWeight: 900, fontSize: 22 }}>{r.label || r.type || "Export"}</div>
+                    <div className="muted" style={{ marginTop: 6 }}>{new Date(r.created_at).toLocaleString()} • {r.meta?.receipt_status_label || "Receipt"}</div>
                   </div>
                   <div className="row" style={{ gap: 8 }}>
-                    <Button variant="secondary" onClick={copyReceiptId}>
-                      <Copy size={14} style={{ marginRight: 6 }} />
-                      {copyOk ? "Copied" : "Copy ID"}
-                    </Button>
-                    <a className="pill" href="/admin/exports" style={{ textDecoration: "none" }}>
-                      Exports <ExternalLink size={14} style={{ marginLeft: 6 }} />
-                    </a>
+                    <Button variant="secondary" onClick={copyReceiptId}>{copyOk ? "Copied" : "Copy ID"}</Button>
+                    <a className="pill setuLinkButton" href="/admin/exports">Exports <ExternalLink size={14} style={{ marginLeft: 6 }} /></a>
                   </div>
                 </div>
-
-                <div style={{ marginTop: 12 }}>
-                  <div className="grid2">
-                    <div>
-                      <div className="muted">Receipt ID</div>
-                      <div style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>{r.id}</div>
-                    </div>
-                    <div>
-                      <div className="muted">Created by</div>
-                      <div>{r.actor_name || r.created_by || "—"}</div>
-                    </div>
+                <div className="setuMetaGrid3" style={{ marginTop: 16 }}>
+                  <div className="setuMetaCard">
+                    <div className="setuMetaCardLabel">Project</div>
+                    <div className="setuMetaCardValue">{r.meta?.project_name || r.project_id || "Org-level export"}</div>
+                  </div>
+                  <div className="setuMetaCard">
+                    <div className="setuMetaCardLabel">Period</div>
+                    <div className="setuMetaCardValue">{r.meta?.period_label || "No period linked"}</div>
+                  </div>
+                  <div className="setuMetaCard">
+                    <div className="setuMetaCardLabel">Diff state</div>
+                    <div className="setuMetaCardValue">{r.meta?.diff_status_label || diffText(r.diff_status)}</div>
                   </div>
                 </div>
-              </Card>
+              </div>
 
               <Card>
-                <div style={{ fontWeight: 650, marginBottom: 8 }}>Details</div>
+                <div style={{ fontWeight: 700, marginBottom: 10 }}>Receipt details</div>
                 <div className="grid2">
                   <div>
-                    <div className="muted">Project</div>
-                    <div>{r.project_id || "—"}</div>
+                    <div className="muted">Receipt ID</div>
+                    <div className="mono">{r.id}</div>
                   </div>
                   <div>
-                    <div className="muted">Payroll Run</div>
+                    <div className="muted">Created by</div>
+                    <div>{r.actor_name || r.created_by || "—"}</div>
+                  </div>
+                  <div>
+                    <div className="muted">Payroll run</div>
                     <div>{r.payroll_run_id || "—"}</div>
                   </div>
                   <div>
                     <div className="muted">Payload hash</div>
-                    <div style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>
-                      {r.payload_hash || "—"}
-                    </div>
+                    <div className="mono">{r.payload_hash || "—"}</div>
                   </div>
                   <div>
-                    <div className="muted">Diff</div>
-                    <div>
-                      {r.diff_status === "same"
-                        ? "No changes"
-                        : r.diff_status === "changed"
-                        ? "Changed"
-                        : "Unknown"}
-                    </div>
+                    <div className="muted">Total amount</div>
+                    <div>{r.meta?.total_amount ? `${r.meta?.currency || "USD"} ${Number(r.meta.total_amount).toFixed(2)}` : "—"}</div>
+                  </div>
+                  <div>
+                    <div className="muted">Total hours</div>
+                    <div>{r.meta?.total_hours != null ? Number(r.meta.total_hours).toFixed(2) : "—"}</div>
                   </div>
                 </div>
               </Card>
 
               <Card>
-                <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
                   <div>
-                    <div style={{ fontWeight: 650 }}>Paid status</div>
-                    <div className="muted" style={{ marginTop: 4 }}>
-                      Project export payments (separate from payroll run paid)
-                    </div>
+                    <div style={{ fontWeight: 700 }}>Project receipt paid status</div>
+                    <div className="muted" style={{ marginTop: 4 }}>This controls the linked client receipt state for the project export.</div>
                   </div>
-
                   {canTogglePaid ? (
                     <div className="row" style={{ gap: 8 }}>
-                      <Button
-                        variant="secondary"
-                        disabled={busy}
-                        onClick={() => togglePaid(false)}
-                        title="Mark unpaid"
-                      >
-                        {busy ? <Loader2 size={14} className="spin" /> : null}
-                        Mark unpaid
-                      </Button>
-                      <Button disabled={busy} onClick={() => togglePaid(true)} title="Mark paid">
-                        {busy ? <Loader2 size={14} className="spin" /> : null}
-                        Mark paid
-                      </Button>
+                      <Button variant="secondary" disabled={busy} onClick={() => togglePaid(false)}>{busy ? <Loader2 size={14} className="spin" /> : null}Mark unpaid</Button>
+                      <Button disabled={busy} onClick={() => togglePaid(true)}>{busy ? <Loader2 size={14} className="spin" /> : null}Mark paid</Button>
                     </div>
                   ) : (
                     <div className="muted">Not linked to a project export record.</div>

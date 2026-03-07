@@ -17,7 +17,7 @@ export async function GET(req: Request, ctx: { params: { projectId: string } }) 
     let q = supa
       .from("project_exports")
       .select(
-        "id, created_at, created_by, export_type, period_start, period_end, payload_hash, metadata, is_paid, paid_by, paid_at, paid_note"
+        "id, created_at, created_by, export_type, period_start, period_end, payload_hash, total_hours, total_amount, currency, metadata, is_paid, paid_by, paid_at, paid_note"
       )
       .eq("org_id", profile.org_id)
       .eq("project_id", projectId)

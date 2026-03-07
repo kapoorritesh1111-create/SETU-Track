@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 import { supabase } from "../../lib/supabaseBrowser";
 
 export default function LoginPage() {
@@ -9,9 +10,7 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [showPassword, setShowPassword] = useState(false);
-
   const [busy, setBusy] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [infoMsg, setInfoMsg] = useState<string | null>(null);
@@ -43,18 +42,13 @@ export default function LoginPage() {
 
     const cleanEmail = email.trim();
     if (!cleanEmail) {
-      setErrorMsg("Enter your email first, then click “Forgot password?”.");
+      setErrorMsg("Enter your work email first, then use reset password.");
       return;
     }
 
     setBusy(true);
 
-    // Send a recovery link that returns to your callback page.
-    // Your /auth/callback should redirect recovery → /reset
-    const redirectTo =
-      typeof window !== "undefined"
-        ? `${window.location.origin}/auth/callback`
-        : undefined;
+    const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined;
 
     const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
       redirectTo,
@@ -67,143 +61,104 @@ export default function LoginPage() {
       return;
     }
 
-    setInfoMsg(
-      "Password reset email sent ✅ Check your inbox. Open the link to set a new password."
-    );
+    setInfoMsg("Password reset email sent. Open the link in your inbox to create a new password.");
   }
 
   return (
-    <div style={{ maxWidth: 420, margin: "80px auto", padding: 20 }}>
-      <h1 style={{ fontSize: 28, marginBottom: 20, textAlign: "center" }}>
-        Login
-      </h1>
+    <div className="setuLoginPage">
+      <div className="setuLoginHero">
+        <div className="setuLoginHeroInner">
+          <img src="/brand/setu-track-logo.svg" alt="SETU TRACK" className="setuLoginLogo" />
+          <div className="setuLoginEyebrow">Payroll command platform</div>
+          <h1>Branded payroll operations, approvals, and export control in one SETU workspace.</h1>
+          <p>
+            Keep project time, payroll runs, receipts, and finance-ready exports aligned across admins, managers,
+            and contractors.
+          </p>
 
-      <form onSubmit={handleLogin}>
-        <div style={{ marginBottom: 15 }}>
-          <label style={{ display: "block", fontWeight: 600 }}>Email</label>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-            style={{
-              width: "100%",
-              padding: 10,
-              marginTop: 6,
-              borderRadius: 8,
-              border: "1px solid #ccc",
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <label style={{ display: "block", fontWeight: 600 }}>Password</label>
-
-          <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-            <input
-              type={showPassword ? "text" : "password"}
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              style={{
-                width: "100%",
-                padding: 10,
-                borderRadius: 8,
-                border: "1px solid #ccc",
-              }}
-            />
-
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              style={{
-                padding: "10px 12px",
-                borderRadius: 8,
-                border: "1px solid #ccc",
-                background: "#fff",
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-              }}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-              title={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? "Hide" : "Show"}
-            </button>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              marginTop: 8,
-            }}
-          >
-            <button
-              type="button"
-              onClick={handleForgotPassword}
-              disabled={busy}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "#111",
-                textDecoration: "underline",
-                cursor: busy ? "not-allowed" : "pointer",
-                padding: 0,
-                fontSize: 13,
-              }}
-            >
-              Forgot password?
-            </button>
+          <div className="setuLoginFeatureGrid">
+            <div className="setuLoginFeatureCard">
+              <ShieldCheck size={18} />
+              <div>
+                <strong>Audit-ready payroll</strong>
+                <span>Closed periods, immutable runs, receipt history, and paid-state tracking.</span>
+              </div>
+            </div>
+            <div className="setuLoginFeatureCard">
+              <LockKeyhole size={18} />
+              <div>
+                <strong>Secure org access</strong>
+                <span>Role-based admin, manager, and contractor access through Supabase auth.</span>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
-        <button
-          type="submit"
-          disabled={busy}
-          style={{
-            width: "100%",
-            padding: 12,
-            backgroundColor: "#000",
-            color: "#fff",
-            borderRadius: 8,
-            border: "none",
-            cursor: busy ? "not-allowed" : "pointer",
-            fontWeight: 700,
-          }}
-        >
-          {busy ? "Signing in..." : "Sign In"}
-        </button>
-      </form>
+      <div className="setuLoginPanelWrap">
+        <div className="setuLoginPanel card">
+          <div className="setuLoginPanelHeader">
+            <div className="setuLoginMiniBadge">SETU TRACK</div>
+            <h2>Sign in</h2>
+            <p>Use your organization email to continue to the payroll workspace.</p>
+          </div>
 
-      {errorMsg && (
-        <div
-          style={{
-            marginTop: 16,
-            padding: 12,
-            backgroundColor: "#f8d7da",
-            color: "#842029",
-            borderRadius: 10,
-          }}
-        >
-          {errorMsg}
+          <form className="setuLoginForm" onSubmit={handleLogin}>
+            <label className="setuLoginField">
+              <span>Email</span>
+              <div className="setuInputIconWrap">
+                <Mail size={16} />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  placeholder="you@company.com"
+                  className="input setuLoginInput"
+                />
+              </div>
+            </label>
+
+            <label className="setuLoginField">
+              <span>Password</span>
+              <div className="setuInputIconWrap setuPasswordWrap">
+                <LockKeyhole size={16} />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  placeholder="Enter your password"
+                  className="input setuLoginInput"
+                />
+                <button
+                  type="button"
+                  className="setuPasswordToggle"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </label>
+
+            <div className="setuLoginActionsRow">
+              <button type="button" className="setuTextButton" onClick={handleForgotPassword} disabled={busy}>
+                Reset password
+              </button>
+            </div>
+
+            <button type="submit" disabled={busy} className="btn btnPrimary btnMd setuLoginSubmit">
+              {busy ? "Signing in…" : "Enter SETU TRACK"}
+            </button>
+          </form>
+
+          {errorMsg ? <div className="alert alertError">{errorMsg}</div> : null}
+          {infoMsg ? <div className="alert alertInfo">{infoMsg}</div> : null}
         </div>
-      )}
-
-      {infoMsg && (
-        <div
-          style={{
-            marginTop: 16,
-            padding: 12,
-            backgroundColor: "#e7f5ff",
-            color: "#084298",
-            borderRadius: 10,
-          }}
-        >
-          {infoMsg}
-        </div>
-      )}
+      </div>
     </div>
   );
 }

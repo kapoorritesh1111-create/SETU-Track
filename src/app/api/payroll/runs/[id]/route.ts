@@ -73,22 +73,59 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const { data: exports, error: expErr } = await supa
       .from("export_events")
       .select(
-        "id, created_at, export_type, file_format, scope, project_id, actor_id, actor_name_snapshot, metadata"
+        "id, created_at, export_type, file_format, scope, project_id, actor_id, actor_name_snapshot, metadata, project_export_id, payload_hash"
       )
       .eq("org_id", profile.org_id)
       .eq("run_id", runId)
       .order("created_at", { ascending: false })
       .limit(25);
 
+    const normalizedRun = {
+      ...(run as any),
+      is_paid: String((run as any)?.status || "").toLowerCase() === "paid" || !!(run as any)?.paid_at,
+    };
+
+    const normalizedLines = ((lines || []) as any[]).map((line) => ({
+      id: String(line.contractor_id),
+      contractor_id: line.contractor_id,
+      contractor_name: line.contractor_name_snapshot || "Unknown contractor",
+      hours: Number(line.hours || 0),
+      hourly_rate: Number(line.hourly_rate_snapshot || 0),
+      amount: Number(line.amount || 0),
+    }));
+
+    const receipts = ((exports || []) as any[]).map((evt) => ({
+      id: evt.id,
+      org_id: profile.org_id,
+      created_at: evt.created_at,
+      created_by: evt.actor_id || null,
+      actor_name: evt.actor_name_snapshot || null,
+      type: evt.export_type,
+      label: evt.metadata?.project_name
+        ? `${evt.export_type} • ${evt.metadata.project_name}`
+        : evt.export_type,
+      project_id: evt.project_id || null,
+      payroll_run_id: runId,
+      project_export_id: evt.project_export_id || evt.metadata?.project_export_id || null,
+      payload_hash: evt.payload_hash || evt.metadata?.payload_hash || null,
+      diff_status: "unknown",
+      meta: {
+        ...(evt.metadata || {}),
+        file_format: evt.file_format,
+        scope: evt.scope,
+      },
+    }));
+
     // Export receipts are best-effort; don't fail the page.
 
     return NextResponse.json({
       ok: true,
-      run,
-      lines: lines || [],
+      run: normalizedRun,
+      lines: normalizedLines,
       entries: entries || [],
       audit: (audit || []) as any,
       exports: (exports || []) as any,
+      receipts,
       counts: {
         contractors: (lines || []).length,
         entries: (entries || []).length,

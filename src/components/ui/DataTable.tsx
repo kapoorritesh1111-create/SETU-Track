@@ -12,7 +12,7 @@ export function Tag({
   tone = "default",
 }: {
   children: React.ReactNode;
-  tone?: "default" | "success" | "warn" | "warning" | "danger" | "info" | "muted" | string;
+  tone?: "default" | "success" | "warn" | "warning" | "danger" | "info" | "muted";
 }) {
   const cls =
     tone === "success"
@@ -35,7 +35,6 @@ export type ActionItem<Row = any> = {
   href?: string | ((row: Row) => string);
   disabled?: boolean;
   danger?: boolean;
-  [key: string]: any;
 };
 
 export function ActionItem({
@@ -93,7 +92,6 @@ export type ColumnDef<Row> = {
   sortValue?: (row: Row) => string | number | null | undefined;
   width?: number | string;
   align?: "left" | "center" | "right";
-  [key: string]: any;
 };
 
 type Props<Row> = {
@@ -107,8 +105,8 @@ type Props<Row> = {
   loading?: boolean;
   emptyTitle?: string;
   emptySubtitle?: string;
+  empty?: React.ReactNode;
   actions?: (row: Row) => Array<ActionItem<Row> | React.ReactNode> | React.ReactNode;
-  [key: string]: any;
 };
 
 export default function DataTable<Row>({
@@ -122,6 +120,7 @@ export default function DataTable<Row>({
   loading = false,
   emptyTitle = "No records",
   emptySubtitle = "Nothing to show yet.",
+  empty,
   actions,
 }: Props<Row>) {
   const [sortBy, setSortBy] = useState<string | null>(null);
@@ -237,8 +236,12 @@ export default function DataTable<Row>({
           </div>
         ) : null}
         <div className="cardPad">
-          <div style={{ fontWeight: 700, marginBottom: 4 }}>{emptyTitle}</div>
-          <div className="muted">{emptySubtitle}</div>
+          {empty || (
+            <>
+              <div style={{ fontWeight: 700, marginBottom: 4 }}>{emptyTitle}</div>
+              <div className="muted">{emptySubtitle}</div>
+            </>
+          )}
         </div>
       </div>
     );
@@ -334,8 +337,7 @@ export default function DataTable<Row>({
                       <div className="row" style={{ gap: 8, justifyContent: "flex-end" }}>
                         {rowActionsArray.map((node, i) => {
                           if (isActionItemObject<Row>(node)) {
-                            const href =
-                              typeof node.href === "function" ? node.href(row) : node.href;
+                            const href = typeof node.href === "function" ? node.href(row) : node.href;
                             const actionFn = node.onClick || node.onSelect;
 
                             return (

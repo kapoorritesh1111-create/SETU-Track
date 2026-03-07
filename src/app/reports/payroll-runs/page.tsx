@@ -38,6 +38,7 @@ export default function PayrollRunsPage() {
   const [runs, setRuns] = useState<Run[]>([]);
   const [msg, setMsg] = useState<string>("");
   const [loadedAt, setLoadedAt] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const canView = profile?.role === "admin";
 
@@ -64,6 +65,25 @@ export default function PayrollRunsPage() {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
+  }
+
+  async function updatePaid(run: Run, nextPaid: boolean) {
+    const note = window.prompt(nextPaid ? "Paid note (optional)" : "Reason for marking unpaid (optional)", run.paid_note || "") || "";
+    try {
+      setBusyId(run.id);
+      setMsg("");
+      await apiJson(`/api/payroll/runs/${encodeURIComponent(run.id)}/paid`, {
+        method: "POST",
+        body: JSON.stringify({ paid: nextPaid, note }),
+      });
+      const data = await apiJson<{ ok: true; runs: Run[] }>("/api/payroll/runs", { method: "GET" });
+      setRuns(data.runs || []);
+      setLoadedAt(new Date().toISOString());
+    } catch (e: any) {
+      setMsg(e?.message || "Failed to update paid status");
+    } finally {
+      setBusyId(null);
+    }
   }
 
   useEffect(() => {
@@ -227,9 +247,29 @@ export default function PayrollRunsPage() {
                       </td>
                       <td>{new Date(r.created_at).toLocaleString()}</td>
                       <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                        <a className="btn btnSecondary" href={`/reports/payroll?${qs}`}>
+                        <a className="btn btnSecondary" href={`/reports/payroll-runs/${r.id}`}>
                           View
                         </a>
+                        <span style={{ display: "inline-block", width: 6 }} />
+                        {r.paid_at ? (
+                          <button
+                            className="btn btnSecondary"
+                            type="button"
+                            disabled={busyId === r.id}
+                            onClick={() => updatePaid(r, false)}
+                          >
+                            Mark unpaid
+                          </button>
+                        ) : (
+                          <button
+                            className="btn btnPrimary"
+                            type="button"
+                            disabled={busyId === r.id}
+                            onClick={() => updatePaid(r, true)}
+                          >
+                            Mark paid
+                          </button>
+                        )}
                         <span style={{ display: "inline-block", width: 6 }} />
                         <ActionMenu
                           trigger="pill"
