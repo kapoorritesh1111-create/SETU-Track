@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">SETU TRACK mark</title>
+  <desc id="desc">Interlocking symbol for SETU TRACK.</desc>
+  <defs>
+    <linearGradient id="g1" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#15C6B4"/>
+      <stop offset="100%" stop-color="#1F6FE5"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0%" x2="100%" y1="100%" y2="0%">
+      <stop offset="0%" stop-color="#243B6B"/>
+      <stop offset="100%" stop-color="#0D2E64"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="#F3F7FC"/>
+  <path d="M56 123c0-11 4-21 12-29l28-28c17-17 45-17 62 0l10 10-27 27-9-9a13 13 0 0 0-18 0l-28 28a13 13 0 0 0 0 18l9 9-27 27-10-10c-8-8-12-18-12-29v-14Z" fill="url(#g2)"/>
+  <path d="M133 56c11 0 21 4 29 12l28 28c17 17 17 45 0 62l-10 10-27-27 9-9a13 13 0 0 0 0-18l-28-28a13 13 0 0 0-18 0l-9 9-27-27 10-10c8-8 18-12 29-12h14Z" fill="url(#g1)"/>
+  <path d="M200 133c0 11-4 21-12 29l-28 28c-17 17-45 17-62 0l-10-10 27-27 9 9a13 13 0 0 0 18 0l28-28a13 13 0 0 0 0-18l-9-9 27-27 10 10c8 8 12 18 12 29v14Z" fill="url(#g1)" opacity="0.95"/>
+  <path d="M123 200c-11 0-21-4-29-12l-28-28c-17-17-17-45 0-62l10-10 27 27-9 9a13 13 0 0 0 0 18l28 28a13 13 0 0 0 18 0l9-9 27 27-10 10c-8 8-18 12-29 12h-14Z" fill="url(#g2)"/>
+  <path d="M103 145 151 97" stroke="#FFFFFF" stroke-width="18" stroke-linecap="round"/>
+  <path d="M112 112h43v43" fill="none" stroke="#FFFFFF" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

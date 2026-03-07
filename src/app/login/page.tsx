@@ -1,12 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import BrandLockup from "../../components/brand/BrandLockup";
+import { BRAND } from "../../config/brand";
 import { supabase } from "../../lib/supabaseBrowser";
 
 export default function LoginPage() {
   const router = useRouter();
+  const emailId = useId();
+  const passwordId = useId();
+  const errorId = useId();
+  const infoId = useId();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -64,11 +70,17 @@ export default function LoginPage() {
     setInfoMsg("Password reset email sent. Open the link in your inbox to create a new password.");
   }
 
+  const describedBy = [errorMsg ? errorId : null, infoMsg ? infoId : null].filter(Boolean).join(" ") || undefined;
+
   return (
     <div className="setuLoginPage">
       <div className="setuLoginHero">
         <div className="setuLoginHeroInner">
-          <img src="/brand/setu-track-logo.svg" alt="SETU TRACK" className="setuLoginLogo" />
+          <BrandLockup
+            className="setuLoginBrand"
+            logoClassName="setuLoginLogo"
+            taglineClassName="setuLoginTagline"
+          />
           <div className="setuLoginEyebrow">Payroll command platform</div>
           <h1>Branded payroll operations, approvals, and export control in one SETU workspace.</h1>
           <p>
@@ -78,14 +90,14 @@ export default function LoginPage() {
 
           <div className="setuLoginFeatureGrid">
             <div className="setuLoginFeatureCard">
-              <ShieldCheck size={18} />
+              <ShieldCheck size={18} aria-hidden="true" />
               <div>
                 <strong>Audit-ready payroll</strong>
                 <span>Closed periods, immutable runs, receipt history, and paid-state tracking.</span>
               </div>
             </div>
             <div className="setuLoginFeatureCard">
-              <LockKeyhole size={18} />
+              <LockKeyhole size={18} aria-hidden="true" />
               <div>
                 <strong>Secure org access</strong>
                 <span>Role-based admin, manager, and contractor access through Supabase auth.</span>
@@ -98,17 +110,18 @@ export default function LoginPage() {
       <div className="setuLoginPanelWrap">
         <div className="setuLoginPanel card">
           <div className="setuLoginPanelHeader">
-            <div className="setuLoginMiniBadge">SETU TRACK</div>
+            <div className="setuLoginMiniBadge">{BRAND.name}</div>
             <h2>Sign in</h2>
             <p>Use your organization email to continue to the payroll workspace.</p>
           </div>
 
-          <form className="setuLoginForm" onSubmit={handleLogin}>
-            <label className="setuLoginField">
-              <span>Email</span>
+          <form className="setuLoginForm" onSubmit={handleLogin} noValidate>
+            <div className="setuLoginField">
+              <label htmlFor={emailId}>Email</label>
               <div className="setuInputIconWrap">
-                <Mail size={16} />
+                <Mail size={16} aria-hidden="true" />
                 <input
+                  id={emailId}
                   type="email"
                   required
                   value={email}
@@ -116,15 +129,17 @@ export default function LoginPage() {
                   autoComplete="email"
                   placeholder="you@company.com"
                   className="input setuLoginInput"
+                  aria-describedby={describedBy}
                 />
               </div>
-            </label>
+            </div>
 
-            <label className="setuLoginField">
-              <span>Password</span>
+            <div className="setuLoginField">
+              <label htmlFor={passwordId}>Password</label>
               <div className="setuInputIconWrap setuPasswordWrap">
-                <LockKeyhole size={16} />
+                <LockKeyhole size={16} aria-hidden="true" />
                 <input
+                  id={passwordId}
                   type={showPassword ? "text" : "password"}
                   required
                   value={password}
@@ -132,6 +147,7 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   placeholder="Enter your password"
                   className="input setuLoginInput"
+                  aria-describedby={describedBy}
                 />
                 <button
                   type="button"
@@ -142,7 +158,7 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
-            </label>
+            </div>
 
             <div className="setuLoginActionsRow">
               <button type="button" className="setuTextButton" onClick={handleForgotPassword} disabled={busy}>
@@ -150,13 +166,23 @@ export default function LoginPage() {
               </button>
             </div>
 
+            {errorMsg ? (
+              <div id={errorId} className="alert alertError" role="alert" aria-live="polite">
+                {errorMsg}
+              </div>
+            ) : null}
+            {infoMsg ? (
+              <div id={infoId} className="alert alertInfo" role="status" aria-live="polite">
+                {infoMsg}
+              </div>
+            ) : null}
+
             <button type="submit" disabled={busy} className="btn btnPrimary btnMd setuLoginSubmit">
-              {busy ? "Signing in…" : "Enter SETU TRACK"}
+              {busy ? "Signing in…" : `Enter ${BRAND.name}`}
             </button>
           </form>
 
-          {errorMsg ? <div className="alert alertError">{errorMsg}</div> : null}
-          {infoMsg ? <div className="alert alertInfo">{infoMsg}</div> : null}
+          <p className="setuLoginFooter">A product of {BRAND.parentCompany}.</p>
         </div>
       </div>
     </div>

@@ -1695,3 +1695,141 @@ html[data-theme="dark"] .analyticsOpsCard {
   .setuBillingPage .setuActionCluster { grid-template-columns: 1fr !important; }
   .payrollRunsLedger .table td:last-child { min-width: 220px; }
 }
+
+/* ---------- Brand lockup + auth refresh ---------- */
+.setuBrandLockup {
+  display: grid;
+  gap: 8px;
+  align-items: start;
+}
+.setuBrandLogo {
+  display: block;
+  width: min(280px, 100%);
+  height: auto;
+}
+.setuBrandCopy {
+  display: grid;
+  gap: 6px;
+}
+.setuBrandTagline {
+  margin: 0;
+  color: var(--setu-indigo-700);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+}
+.setuBrandDescription {
+  margin: 0;
+  color: var(--setu-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.setuLoginHeroInner .setuBrandCopy {
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.setuLoginTagline {
+  font-size: 13px;
+  color: var(--setu-teal-700);
+}
+.setuLoginField > label {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--setu-indigo-900);
+}
+.setuInputIconWrap:focus-within {
+  border-color: color-mix(in srgb, var(--setu-indigo-700) 64%, white 36%);
+  box-shadow: 0 0 0 4px rgba(36, 59, 107, 0.12);
+}
+.setuPasswordToggle:focus-visible,
+.setuTextButton:focus-visible,
+.setuLoginSubmit:focus-visible,
+.mwSidebarBrandBtn:focus-visible,
+.mwBrandButton:focus-visible {
+  outline: 3px solid rgba(36, 59, 107, 0.22);
+  outline-offset: 3px;
+}
+.setuLoginPanel {
+  display: flex;
+  flex-direction: column;
+}
+.setuLoginFooter {
+  margin: 18px 0 0;
+  color: color-mix(in srgb, var(--setu-muted) 88%, white 12%);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+.setuLoginActionsRow {
+  margin-top: -2px;
+}
+.setuLoginMiniBadge {
+  margin-bottom: 2px;
+}
+.mwSidebarBrandLockup .setuBrandCopy,
+.mwDrawerHeader .setuBrandCopy {
+  gap: 8px;
+}
+.mwSidebarBrandTagline {
+  color: rgba(255,255,255,0.84);
+  font-size: 10px;
+  letter-spacing: .24em;
+}
+.mwSidebarBrandCaption {
+  margin: 0;
+}
+.mwSidebarWordmark {
+  width: min(194px, 100%);
+}
+html[data-theme="dark"] .setuLoginPage {
+  background:
+    radial-gradient(1000px 520px at 6% 8%, rgba(244, 122, 31, 0.14), transparent 56%),
+    radial-gradient(900px 520px at 80% 12%, rgba(38, 196, 184, 0.14), transparent 58%),
+    linear-gradient(180deg, #091527 0%, #0f1d35 100%);
+}
+html[data-theme="dark"] .setuLoginPanel,
+html[data-theme="dark"] .setuLoginFeatureCard {
+  background: rgba(11, 25, 47, 0.84);
+  border-color: rgba(255,255,255,0.10);
+}
+html[data-theme="dark"] .setuBrandTagline,
+html[data-theme="dark"] .setuLoginField > label,
+html[data-theme="dark"] .setuLoginPanelHeader h2,
+html[data-theme="dark"] .setuLoginHero h1 {
+  color: #eff6ff;
+}
+html[data-theme="dark"] .setuBrandDescription,
+html[data-theme="dark"] .setuLoginHero p,
+html[data-theme="dark"] .setuLoginPanelHeader p,
+html[data-theme="dark"] .setuLoginFeatureCard span,
+html[data-theme="dark"] .setuLoginFooter {
+  color: rgba(226, 232, 240, 0.76);
+}
+html[data-theme="dark"] .setuInputIconWrap {
+  background: rgba(7, 18, 36, 0.84);
+  border-color: rgba(255,255,255,0.12);
+}
+html[data-theme="dark"] .setuLoginInput {
+  color: #eff6ff;
+}
+@media (max-width: 900px) {
+  .setuLoginHeroInner .setuBrandCopy {
+    margin-bottom: 14px;
+  }
+}
+@media (max-width: 640px) {
+  .setuBrandLogo,
+  .setuLoginLogo {
+    width: min(220px, 82vw);
+  }
+  .setuBrandTagline,
+  .setuLoginTagline,
+  .mwSidebarBrandTagline {
+    letter-spacing: .18em;
+    font-size: 11px;
+  }
+  .setuLoginFooter {
+    font-size: 11px;
+  }
+}

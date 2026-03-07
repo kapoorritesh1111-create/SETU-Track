@@ -2,8 +2,6 @@
 
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { supabase } from "../../lib/supabaseBrowser";
-import { useProfile } from "../../lib/useProfile";
 import {
   LayoutDashboard,
   Clock3,
@@ -22,6 +20,10 @@ import {
   Building2,
   BarChart3,
 } from "lucide-react";
+import BrandLockup from "../brand/BrandLockup";
+import { BRAND } from "../../config/brand";
+import { supabase } from "../../lib/supabaseBrowser";
+import { useProfile } from "../../lib/useProfile";
 
 type Props = {
   title?: string;
@@ -159,12 +161,7 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
     <div className="mwShellTop appShell">
       <header className="mwTopInner">
         <div className="mwTopLeft">
-          <button
-            className="mwHamburger"
-            onClick={() => setMobileOpen(true)}
-            aria-label="Open menu"
-            type="button"
-          >
+          <button className="mwHamburger" onClick={() => setMobileOpen(true)} aria-label="Open menu" type="button">
             <Menu size={18} />
           </button>
 
@@ -172,10 +169,10 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
             type="button"
             className="mwBrandButton mwDesktopHidden mwHeaderBrand"
             onClick={() => go("/dashboard")}
-            aria-label="Go to dashboard"
+            aria-label={`Go to ${BRAND.name} dashboard`}
           >
             <span className="mwHeaderBrandMark mwHeaderBrandMarkIconOnly">
-              <img src="/brand/setu-knot-icon.png" alt="" aria-hidden="true" />
+              <img src={BRAND.logo.mark} alt="" aria-hidden="true" />
             </span>
           </button>
         </div>
@@ -211,11 +208,7 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
                   </span>
                 </button>
 
-                <button
-                  type="button"
-                  className="mwMenuItem"
-                  onClick={() => go("/settings/appearance")}
-                >
+                <button type="button" className="mwMenuItem" onClick={() => go("/settings/appearance")}>
                   <span className="mwInlineIconLabel">
                     <Palette size={16} />
                     Change theme
@@ -268,14 +261,14 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
             type="button"
             className="mwSidebarBrandBtn mwSidebarBrandLockup"
             onClick={() => go("/dashboard")}
-            aria-label="Go to dashboard"
+            aria-label={`Go to ${BRAND.name} dashboard`}
           >
-            <img
-              className="mwSidebarWordmark"
-              src="/brand/setu-logo-horizontal-light.png"
-              alt="SETU TRACK"
+            <BrandLockup
+              logoClassName="mwSidebarWordmark"
+              taglineClassName="mwSidebarBrandTagline"
+              descriptionClassName="mwSidebarBrandCaption"
+              showDescription
             />
-            <span className="mwSidebarBrandCaption">Contractor operations, payroll intelligence, and analytics</span>
           </button>
 
           <div className="mwOrgBadge">
@@ -309,18 +302,17 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
                 type="button"
                 className="mwSidebarBrandBtn mwSidebarBrandLockup"
                 onClick={() => go("/dashboard")}
-                aria-label="Go to dashboard"
+                aria-label={`Go to ${BRAND.name} dashboard`}
               >
-                <img className="mwSidebarWordmark" src="/brand/setu-logo-horizontal-light.png" alt="SETU TRACK" />
-                <span className="mwSidebarBrandCaption">Contractor operations, payroll intelligence, and analytics</span>
+                <BrandLockup
+                  logoClassName="mwSidebarWordmark"
+                  taglineClassName="mwSidebarBrandTagline"
+                  descriptionClassName="mwSidebarBrandCaption"
+                  showDescription
+                />
               </button>
 
-              <button
-                type="button"
-                className="iconBtn"
-                onClick={() => setMobileOpen(false)}
-                aria-label="Close menu"
-              >
+              <button type="button" className="iconBtn" onClick={() => setMobileOpen(false)} aria-label="Close menu">
                 <X size={18} />
               </button>
             </div>
@@ -360,11 +352,7 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
                   </span>
                 </button>
 
-                <button
-                  type="button"
-                  className="mwSideItem"
-                  onClick={() => go("/settings/appearance")}
-                >
+                <button type="button" className="mwSideItem" onClick={() => go("/settings/appearance")}>
                   <span className="mwInlineIconLabel">
                     <Palette size={16} />
                     Change theme
@@ -380,12 +368,7 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
                   </button>
                 )}
 
-                <button
-                  type="button"
-                  className="mwSideItem"
-                  onClick={signOut}
-                  style={{ color: "var(--danger)" }}
-                >
+                <button type="button" className="mwSideItem" onClick={signOut} style={{ color: "var(--danger)" }}>
                   <span className="mwInlineIconLabel">
                     <LogOut size={16} />
                     Log out
