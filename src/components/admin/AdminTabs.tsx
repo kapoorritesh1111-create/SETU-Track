@@ -12,7 +12,7 @@ export default function AdminTabs({
   });
 
   return (
-    <div className="card cardPad" style={{ maxWidth: 980, marginBottom: 12 }}>
+    <div className="card cardPad" style={{ width: "100%", marginBottom: 12 }}>
       <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
         <a className="pill" href="/admin/users" style={linkStyle(active === "users")}>
           Members
@@ -35,7 +35,7 @@ export default function AdminTabs({
       </div>
 
       <div className="muted" style={{ marginTop: 8 }}>
-        Members = directory. Invitations = pending invites. Billing = Stripe-ready placeholder. Exports = receipts & history.
+        Admin workspace for members, invitations, billing, exports, and organization settings.
       </div>
     </div>
   );

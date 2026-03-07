@@ -274,11 +274,11 @@ export default function PayrollReportPage() {
   return (
     <AppShell
       title="Payroll Report"
-      subtitle="Finance-ready payroll visibility for active time-entry workers, project summaries, and payment confirmation."
+      subtitle="Review payroll cost, export readiness, and paid-state history without leaving one reporting surface."
       right={headerRight}
     >
-      <div className="setuReportPage">
-        <div className="setuFilterBar">
+      <div className="setuReportPage setuPageNarrow">
+        <div className="setuFilterBar setuCompactToolbar">
           <div className="setuFilterGrid">
             <label className="setuField">
               <span>Date</span>
@@ -340,8 +340,8 @@ export default function PayrollReportPage() {
 
           <div className="setuFilterMeta">
             <span className="pill">{payload?.range.start || "—"} → {payload?.range.end || "—"}</span>
-            <span className="pill">{periodScope === "closed_only" ? "Closed periods only" : "Open + closed periods"}</span>
-            <span className="pill">View: {view === "project" ? "Project summary" : view === "contractor" ? "Contractor summary" : "Payroll register"}</span>
+            <span className="pill">{periodScope === "closed_only" ? "Closed periods" : "Open + closed"}</span>
+            <span className="pill">{view === "project" ? "Project view" : view === "contractor" ? "Contractor view" : "Register view"}</span>
           </div>
 
           {preset === "custom" ? (
@@ -354,10 +354,10 @@ export default function PayrollReportPage() {
 
           <div className="setuViewToolbar">
             <div className="setuViewToolbarLeft">
-              <div className="setuSegmented">
-              <button className={view === "project" ? "segActive" : ""} onClick={() => setView("project")}>By Project</button>
-              <button className={view === "contractor" ? "segActive" : ""} onClick={() => setView("contractor")}>By Contractor</button>
-              <button className={view === "register" ? "segActive" : ""} onClick={() => setView("register")}>Register</button>
+              <div className="setuSegmented setuSegmentedSolid">
+                <button type="button" className={view === "project" ? "segActive" : ""} onClick={() => setView("project")}>Projects</button>
+                <button type="button" className={view === "contractor" ? "segActive" : ""} onClick={() => setView("contractor")}>Contractors</button>
+                <button type="button" className={view === "register" ? "segActive" : ""} onClick={() => setView("register")}>Register</button>
               </div>
               <input className="input setuToolbarSearch" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search project, person, id, or period" />
             </div>
@@ -384,15 +384,15 @@ export default function PayrollReportPage() {
 
             <div className="setuInsightGrid">
               <div className="setuHeroCard setuNarrativeCard">
-                <div className="setuSectionEyebrow">Current reporting scope</div>
-                <h2>One payroll workspace for finance summary, contractor summary, and row-level action control.</h2>
+                <div className="setuSectionEyebrow">Reporting scope</div>
+                <h2>One payroll workspace for totals, payability, and export control.</h2>
                 <p>
-                  Filters support current week, last week, current month, last month, and custom range. Project and contractor summaries stay aligned to the active access scope, while export and payment signals remain visible in the same view.
+                  Filter once, switch between projects, contractors, and register rows, and keep payment and export signals aligned.
                 </p>
                 <div className="setuNarrativeStats">
-                  <span className="pill">{payload.kpis.visible_projects} visible projects</span>
-                  <span className="pill">{payload.kpis.periods_in_view} periods in view</span>
-                  <span className="pill">{payload.kpis.exports_linked} exports linked</span>
+                  <span className="pill">{payload.kpis.visible_projects} projects</span>
+                  <span className="pill">{payload.kpis.periods_in_view} periods</span>
+                  <span className="pill">{payload.kpis.exports_linked} linked exports</span>
                   <span className="pill">{payload.kpis.paid_rows} paid rows</span>
                 </div>
               </div>

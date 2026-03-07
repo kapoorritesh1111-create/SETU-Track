@@ -63,7 +63,7 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
 
   const role = profile?.role || "user";
   const fullName = profile?.full_name || "User";
-  const orgName = profile?.org_name || "SETU TRACK";
+  const orgName = profile?.org_name || profile?.company_name || "Workspace";
   const isAdmin = role === "admin";
 
   const navItems: NavItem[] = useMemo(
@@ -177,9 +177,6 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
             <span className="mwHeaderBrandMark mwHeaderBrandMarkIconOnly">
               <img src="/brand/setu-knot-icon.png" alt="" aria-hidden="true" />
             </span>
-            <span className="mwHeaderBrandText">
-              <span className="mwHeaderBrandTitle">SETU TRACK</span>
-            </span>
           </button>
         </div>
 
@@ -269,22 +266,16 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
         <div className="mwSidebarBrand">
           <button
             type="button"
-            className="mwSidebarBrandBtn mwSidebarBrandHero"
+            className="mwSidebarBrandBtn mwSidebarBrandLockup"
             onClick={() => go("/dashboard")}
             aria-label="Go to dashboard"
           >
-            <span className="mwSidebarBrandMark">
-              <img
-                className="mwSidebarLogo"
-                src="/brand/setu-track-logo-dark.png"
-                alt="SETU TRACK"
-              />
-            </span>
-            <span className="mwSidebarBrandCopy">
-              <span className="mwSidebarEyebrow">CONNECT • TRACK • GROW</span>
-              <span className="mwSidebarBrandTitle">SETU TRACK</span>
-              <span className="mwSidebarBrandCaption">Contractor operations, payroll intelligence, and analytics</span>
-            </span>
+            <img
+              className="mwSidebarWordmark"
+              src="/brand/setu-logo-horizontal-light.png"
+              alt="SETU TRACK"
+            />
+            <span className="mwSidebarBrandCaption">Contractor operations, payroll intelligence, and analytics</span>
           </button>
 
           <div className="mwOrgBadge">
@@ -316,18 +307,12 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
             <div className="mwDrawerHeader">
               <button
                 type="button"
-                className="mwSidebarBrandBtn mwSidebarBrandHero"
+                className="mwSidebarBrandBtn mwSidebarBrandLockup"
                 onClick={() => go("/dashboard")}
                 aria-label="Go to dashboard"
               >
-                <span className="mwSidebarBrandMark">
-                  <img className="mwSidebarLogo" src="/brand/setu-track-logo-dark.png" alt="SETU TRACK" />
-                </span>
-                <span className="mwSidebarBrandCopy">
-                  <span className="mwSidebarEyebrow">CONNECT • TRACK • GROW</span>
-                  <span className="mwSidebarBrandTitle">SETU TRACK</span>
-                  <span className="mwSidebarBrandCaption">Contractor operations, payroll intelligence, and analytics</span>
-                </span>
+                <img className="mwSidebarWordmark" src="/brand/setu-logo-horizontal-light.png" alt="SETU TRACK" />
+                <span className="mwSidebarBrandCaption">Contractor operations, payroll intelligence, and analytics</span>
               </button>
 
               <button

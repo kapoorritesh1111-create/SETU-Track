@@ -61,6 +61,26 @@ What should work end-to-end in this baseline:
 - Admin Export Center: `/admin/exports` (audit log + receipt drill-in)
 
 See `docs/RELEASE_CHECKLIST.md` for the full completed list + verification steps.
+## 2026-03-07 Product repair + UX consistency release
+
+This repo now includes a broader repair pass focused on product maturity rather than isolated fixes.
+
+Included in this pass:
+- sidebar + drawer branding rebuilt around the approved SETU TRACK wordmark
+- duplicate product naming reduced in the shell
+- admin dashboard redesigned into a lighter command-center layout
+- payroll report copy, segmented controls, and reporting scope language simplified
+- billing page widened and aligned to a future Stripe integration model
+- responsive spacing and dark-mode surfaces tightened across reporting/admin pages
+- new documentation added:
+  - `docs/CHANGELOG.md`
+  - `docs/SETU_REPAIR_RELEASE_2026-03-07.md`
+
+Recommended verification after unzip:
+1. `npm install`
+2. `npm run build`
+3. verify `/dashboard`, `/reports/payroll`, `/analytics`, `/admin/exports`, `/reports/payroll-runs`, and `/admin/billing`
+
 ## Run locally
 
 ```bash

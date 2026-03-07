@@ -1334,3 +1334,364 @@ body {
 @media (max-width: 1080px) {
   :root { --sidebar-w: 0px; }
 }
+
+/* ---------- 2026-03-07 maturity pass ---------- */
+:root {
+  --page-max: 1320px;
+  --page-max-narrow: 1240px;
+}
+html[data-theme="dark"] body {
+  background:
+    radial-gradient(1200px 420px at 100% 0%, rgba(34, 199, 184, 0.12), transparent 46%),
+    linear-gradient(180deg, #071a33 0%, #081d38 120px, #071a33 100%);
+}
+html[data-theme="dark"] .mwTopInner {
+  background: rgba(7, 26, 51, 0.88);
+  border-bottom-color: rgba(255,255,255,0.08);
+}
+html[data-theme="dark"] .pageHeader,
+html[data-theme="dark"] .setuFilterBar,
+html[data-theme="dark"] .setuHeroCard,
+html[data-theme="dark"] .setuChartCard,
+html[data-theme="dark"] .setuMainCard,
+html[data-theme="dark"] .setuSideCard,
+html[data-theme="dark"] .setuMetricCard,
+html[data-theme="dark"] .analyticsCard,
+html[data-theme="dark"] .setuDataSurface,
+html[data-theme="dark"] .card {
+  background: linear-gradient(180deg, rgba(12,35,65,0.96), rgba(16,43,77,0.98));
+  border-color: rgba(255,255,255,0.08);
+}
+.setuPageNarrow { max-width: var(--page-max-narrow); }
+.setuReportPage,
+.setuPageNarrow,
+.setuPageWide,
+.setuExportsPage,
+.setuBillingPage { width: 100%; }
+.setuDataSurface {
+  background: var(--setu-surface);
+  border: 1px solid var(--setu-border);
+  border-radius: 24px;
+  box-shadow: var(--shadow-soft);
+  padding: 20px;
+}
+.setuFilterBarTop,
+.analyticsCardHeader,
+.dashboardHeroControls,
+.dashboardScopeMeta,
+.analyticsRightStack,
+.billingHeroActions,
+.billingStatusGrid,
+.billingChecklistItem,
+.dashboardTotalsStrip {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.setuCompactToolbar { gap: 14px; }
+.setuCompactToolbar .setuFilterGrid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.setuSegmentedSolid {
+  background: color-mix(in srgb, var(--setu-surface) 86%, var(--setu-bg));
+  border-color: rgba(13, 32, 56, 0.10);
+}
+.setuSegmentedSolid button {
+  border: 0;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--setu-muted);
+  font-weight: 800;
+}
+.setuSegmentedSolid .segActive {
+  background: var(--setu-gradient-main);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(15, 111, 229, 0.22);
+}
+.analyticsHeroCard,
+.dashboardHeroCard,
+.billingHeroCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, .9fr);
+  gap: 18px;
+  align-items: start;
+}
+.analyticsHeroCopy h2,
+.dashboardHeroCard h2,
+.billingHeroCard h2 {
+  font-size: clamp(1.8rem, 2.3vw, 2.5rem);
+  line-height: 1.06;
+  margin-top: 12px;
+}
+.analyticsHeroCopy p,
+.dashboardHeroCard p,
+.billingHeroCard p {
+  margin-top: 10px;
+  color: var(--setu-muted);
+  line-height: 1.6;
+  max-width: 64ch;
+}
+.analyticsHeroMeta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.analyticsHeroMetaCard {
+  border: 1px solid var(--setu-border);
+  border-radius: 18px;
+  padding: 16px;
+  background: color-mix(in srgb, var(--setu-surface) 82%, var(--setu-bg));
+  display: grid;
+  gap: 8px;
+}
+.analyticsHeroMetaCard span {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--setu-muted);
+  font-weight: 800;
+}
+.analyticsHeroMetaCard strong {
+  font-size: 20px;
+  line-height: 1.05;
+}
+.analyticsGridEnhanced { gap: 18px; }
+.analyticsSplitEnhanced { grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.95fr); }
+.analyticsCardTall { min-height: 100%; }
+.analyticsChartColumns { grid-template-columns: repeat(6, minmax(0, 1fr)); min-height: 280px; }
+.analyticsBarValue { font-size: 12px; color: var(--setu-muted); text-align: center; }
+.analyticsBarMeta { font-size: 11px; color: var(--setu-muted); text-align: center; }
+.analyticsListDense { gap: 0; }
+.analyticsBudgetRow { display: grid; gap: 10px; padding: 14px 0; border-top: 1px solid rgba(13,32,56,0.08); }
+.analyticsBudgetRow:first-child { padding-top: 0; border-top: 0; }
+.analyticsBudgetTop { display: flex; justify-content: space-between; gap: 14px; align-items: center; }
+.analyticsTrendTrack { width: 100%; height: 10px; border-radius: 999px; background: rgba(36,59,107,0.08); overflow: hidden; }
+.analyticsTrendFill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--setu-indigo-700), var(--setu-teal-500)); }
+.analyticsOpsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+.analyticsOpsCard {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--setu-border);
+  background: color-mix(in srgb, var(--setu-surface) 82%, var(--setu-bg));
+  display: grid;
+  gap: 8px;
+}
+.analyticsOpsCard span { font-size: 12px; color: var(--setu-muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 800; }
+.analyticsOpsCard strong { font-size: 20px; }
+.analyticsEmptyState { min-height: 220px; display: grid; align-content: center; }
+.setuExportTable .card,
+.setuExportTable .tableWrap { box-shadow: none; }
+.setuReceiptStack .setuExportTitle { font-weight: 800; }
+.setuExportMeta { color: var(--setu-muted); font-size: 12px; }
+.setuHeaderActions .analyticsControl { width: 170px; }
+.dashboardCommandGrid { grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.95fr); }
+.dashboardBottomGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.dashboardQuickActions { display: grid; gap: 10px; }
+.dashboardQuickActions .dbQuickBtn { display: grid; gap: 6px; text-align: left; }
+.dashboardTotalsStrip { margin-top: 14px; }
+.payrollRunsLedger .table td:nth-child(2),
+.payrollRunsLedger .table td:nth-child(3) { min-width: 150px; }
+.billingContentGrid { grid-template-columns: minmax(0, 1.2fr) minmax(320px, .95fr); }
+.billingStatusGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+.billingPanel {
+  border: 1px solid var(--setu-border);
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: color-mix(in srgb, var(--setu-surface) 82%, var(--setu-bg));
+}
+.billingPanelIcon {
+  width: 40px; height: 40px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(31,111,229,0.10); color: var(--setu-indigo-700);
+}
+.billingChecklist { display: grid; gap: 10px; margin-top: 16px; }
+.billingChecklistItem { justify-content: flex-start; align-items: flex-start; }
+.billingChecklistItem code { font-size: 12px; }
+.mwSidebarBrandMarkSymbol {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.mwSidebarLogoSymbol {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  filter: none;
+}
+.mwSidebarBrandHero {
+  grid-template-columns: auto 1fr;
+}
+.mwSidebarBrandCopy { min-width: 0; }
+.mwSidebarBrandCaption { max-width: 180px; }
+.mwOrgBadgeText { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 1180px) {
+  .analyticsHeroCard,
+  .dashboardHeroCard,
+  .billingHeroCard,
+  .dashboardCommandGrid,
+  .billingContentGrid,
+  .dashboardBottomGrid,
+  .analyticsSplitEnhanced,
+  .setuInsightGrid,
+  .setuContentGrid,
+  .setuDashboardSplit { grid-template-columns: 1fr; }
+  .analyticsHeroMeta { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .setuCompactToolbar .setuFilterGrid,
+  .analyticsOpsGrid,
+  .billingStatusGrid,
+  .analyticsHeroMeta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .setuCompactToolbar .setuFilterGrid,
+  .analyticsOpsGrid,
+  .billingStatusGrid,
+  .analyticsHeroMeta,
+  .setuMetricsGrid,
+  .setuWorkspaceStrip,
+  .setuHeroMetrics { grid-template-columns: 1fr !important; }
+  .setuHeaderActions { width: 100%; }
+  .setuHeaderActions > * { width: 100%; }
+  .setuToolbarSearch { min-width: 0; width: 100%; }
+  .analyticsBudgetTop,
+  .analyticsRightStack,
+  .billingHeroActions,
+  .setuViewToolbar,
+  .setuViewToolbarLeft,
+  .setuViewToolbarRight,
+  .dashboardHeroControls,
+  .dashboardScopeMeta { align-items: stretch; }
+  .setuActionRow,
+  .setuHeroActions { width: 100%; }
+  .setuActionRow > *,
+  .setuHeroActions > *,
+  .billingHeroActions > *,
+  .dashboardHeroControls > * { width: 100%; }
+  .mwSidebarBrandCaption { max-width: none; }
+}
+
+
+/* ---------- 2026-03-07 continued maturity pass ---------- */
+:root {
+  --page-max: 1440px;
+  --page-max-narrow: 1360px;
+}
+.container { padding: 28px 32px 40px; }
+.pageBody { max-width: var(--page-max); }
+.pageHeader { max-width: var(--page-max); }
+.mwTopInner { padding: 0 24px; }
+.mwSidebar { width: var(--sidebar-w); }
+.mwSidebarBrand { gap: 18px; }
+.mwSidebarBrandLockup {
+  width: 100%;
+  display: grid;
+  gap: 14px;
+  justify-items: start;
+  text-align: left;
+}
+.mwSidebarWordmark {
+  width: min(188px, 100%);
+  height: auto;
+  object-fit: contain;
+}
+.mwSidebarBrandCaption {
+  max-width: 220px;
+  color: rgba(255,255,255,0.78);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.mwHeaderBrand {
+  width: 40px;
+  height: 40px;
+  justify-content: center;
+}
+.mwHeaderBrandMarkIconOnly {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(36,59,107,0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.mwHeaderBrandMarkIconOnly img {
+  width: 22px;
+  height: 22px;
+}
+.setuFilterBarTop { justify-content: space-between; }
+.setuViewToolbar { gap: 12px; }
+.setuViewToolbarLeft { flex: 1 1 760px; }
+.setuViewToolbarRight { flex: 0 0 auto; }
+.setuToolbarSearch { min-width: 300px; flex: 1 1 280px; }
+.dashboardHeroCardCompact { grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr); }
+.dashboardFocusGrid { display: grid; grid-template-columns: minmax(0, 0.92fr) minmax(280px, 0.88fr); gap: 16px; }
+.dashboardChecklistPanel {
+  border: 1px solid var(--setu-border);
+  border-radius: 18px;
+  padding: 16px;
+  background: color-mix(in srgb, var(--setu-surface) 82%, var(--setu-bg));
+}
+.dashboardChecklistList { margin-top: 10px; }
+.dashboardMiniStatGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.payrollRunsLedger .table td:last-child { min-width: 270px; }
+.setuExportsPage .setuDataSurface,
+.setuBillingPage .setuDataSurface,
+.setuBillingPage .setuHeroCard,
+.setuBillingPage .setuMainCard,
+.setuBillingPage .setuSideCard { max-width: none; }
+.setuBillingPage .setuHeroCard { padding: 22px; }
+.setuBillingPage .setuSectionTitle { font-size: 20px; }
+.setuBillingPage .setuActionCluster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+html[data-theme="dark"] .mwSidebar {
+  background: linear-gradient(180deg, #07172d 0%, #091f3c 100%);
+  border-right-color: rgba(255,255,255,0.06);
+}
+html[data-theme="dark"] .mwHeaderBrandMarkIconOnly {
+  background: rgba(255,255,255,0.10);
+}
+html[data-theme="dark"] .mwOrgBadge {
+  background: rgba(255,255,255,0.08);
+}
+html[data-theme="dark"] .setuSegmentedSolid {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.08);
+}
+html[data-theme="dark"] .setuSegmentedSolid button { color: var(--setu-muted); }
+html[data-theme="dark"] .dashboardChecklistPanel,
+html[data-theme="dark"] .analyticsHeroMetaCard,
+html[data-theme="dark"] .billingPanel,
+html[data-theme="dark"] .analyticsOpsCard {
+  background: color-mix(in srgb, var(--setu-surface) 88%, #000 12%);
+  border-color: rgba(255,255,255,0.08);
+}
+@media (max-width: 1180px) {
+  .container { padding: 22px 20px 32px; }
+  .dashboardHeroCardCompact,
+  .dashboardFocusGrid { grid-template-columns: 1fr; }
+}
+@media (max-width: 900px) {
+  .mwSidebarWordmark { width: 170px; }
+  .dashboardMiniStatGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .container { padding: 18px 14px 28px; }
+  .pageHeader { padding: 16px; border-radius: 18px; }
+  .pageTitle { font-size: 24px; }
+  .mwSidebarBrandCaption { max-width: none; }
+  .dashboardMiniStatGrid,
+  .dashboardBottomGrid,
+  .setuBillingPage .setuActionCluster { grid-template-columns: 1fr !important; }
+  .payrollRunsLedger .table td:last-child { min-width: 220px; }
+}
