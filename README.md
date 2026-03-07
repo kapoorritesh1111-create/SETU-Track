@@ -226,3 +226,10 @@ Recommended verification after deploy:
 6. `/reports/payroll`
 7. `/reports/payroll-runs`
 8. `/admin/org-settings`
+
+
+## Phase 2B — Financial Intelligence Layer
+- project budget tracking is now schema-backed with billing rate + cost tracking fields
+- contractor payroll completeness now supports score-based readiness checks
+- payroll export ledger now records audit-ready export history
+- payroll run detail now exposes project allocation + export history context

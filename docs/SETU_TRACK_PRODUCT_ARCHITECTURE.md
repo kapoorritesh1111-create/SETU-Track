@@ -89,3 +89,10 @@ This migration adds foundational schema only. It is intentionally additive and d
 ## Release posture
 This repo is the **single source of truth** moving forward.
 Future work should branch from this baseline and update these docs rather than re-introducing references to prior repos.
+
+
+## Phase 2B — Financial Intelligence Layer
+- project budget tracking is now schema-backed with billing rate + cost tracking fields
+- contractor payroll completeness now supports score-based readiness checks
+- payroll export ledger now records audit-ready export history
+- payroll run detail now exposes project allocation + export history context

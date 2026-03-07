@@ -17,6 +17,9 @@ export type Profile = {
   address?: string | null;
   avatar_url?: string | null;
   ui_prefs?: any; // jsonb
+  country?: string | null;
+  payment_details?: any;
+  tax_information?: any;
 };
 
 type UseProfileResult = {
@@ -41,7 +44,7 @@ export function useProfile(): UseProfileResult {
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "id, org_id, full_name, role, hourly_rate, is_active, manager_id, onboarding_completed_at, phone, address, avatar_url, ui_prefs"
+        "id, org_id, full_name, role, hourly_rate, is_active, manager_id, onboarding_completed_at, phone, address, avatar_url, ui_prefs, country, payment_details, tax_information"
       )
       .eq("id", uid)
       .maybeSingle();

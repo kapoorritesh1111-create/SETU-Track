@@ -34,6 +34,37 @@ type AdminSummary = {
   currency?: string;
 };
 
+type FinancialPayload = {
+  ok: true;
+  analytics: {
+    total_payroll: number;
+    total_hours: number;
+    budget_used: number;
+    budget_remaining: number;
+    budget_risk_alerts: number;
+    incomplete_profiles: number;
+    payroll_variance: { delta: number; pct: number };
+    export_history_count: number;
+  };
+  project_budgets: Array<{
+    project_id: string;
+    project_name: string;
+    budget_amount: number;
+    payroll_cost: number;
+    remaining_budget: number;
+    billing_rate: number;
+    risk: string;
+    currency: string;
+  }>;
+  profile_completeness: Array<{
+    contractor_id: string;
+    contractor_name: string;
+    score: number;
+    missing: string[];
+    payroll_missing: string[];
+  }>;
+};
+
 function money(x: number) {
   return x.toFixed(2);
 }
@@ -47,6 +78,13 @@ function pctChange(current: number, previous: number) {
   if (!previous && !current) return 0;
   if (!previous) return 100;
   return ((current - previous) / previous) * 100;
+}
+
+function riskTone(risk: string): "success" | "warn" | "danger" | "info" {
+  if (risk === "healthy") return "success";
+  if (risk === "watch") return "info";
+  if (risk === "high") return "warn";
+  return "danger";
 }
 
 export default function AdminDashboard({ orgId }: { orgId: string; userId: string }) {
@@ -63,6 +101,7 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
   const [summary, setSummary] = useState<AdminSummary | null>(null);
   const [currentMonthSummary, setCurrentMonthSummary] = useState<AdminSummary | null>(null);
   const [previousMonthSummary, setPreviousMonthSummary] = useState<AdminSummary | null>(null);
+  const [financials, setFinancials] = useState<FinancialPayload | null>(null);
 
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
@@ -152,20 +191,23 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
 
     (async () => {
       try {
-        const [selected, currentMonth, previousMonth] = await Promise.all([
+        const [selected, currentMonth, previousMonth, financial] = await Promise.all([
           fetchSummary(startDate, endDate),
           fetchSummary(currentMonthRange.start, currentMonthRange.end),
           fetchSummary(previousMonthRange.start, previousMonthRange.end),
+          apiJson<FinancialPayload>(`/api/dashboard/financial-intelligence?start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}`),
         ]);
         if (cancelled) return;
         setSummary(selected);
         setCurrentMonthSummary(currentMonth);
         setPreviousMonthSummary(previousMonth);
+        setFinancials(financial);
       } catch {
         if (cancelled) return;
         setSummary(null);
         setCurrentMonthSummary(null);
         setPreviousMonthSummary(null);
+        setFinancials(null);
       }
     })();
 
@@ -219,181 +261,179 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
 
   const currentPayroll = Number(currentMonthSummary?.total_amount ?? 0);
   const previousPayroll = Number(previousMonthSummary?.total_amount ?? 0);
-  const currentHours = Number(currentMonthSummary?.total_hours ?? 0);
-  const previousHours = Number(previousMonthSummary?.total_hours ?? 0);
-  const payrollChange = pctChange(currentPayroll, previousPayroll);
-  const hoursChange = pctChange(currentHours, previousHours);
-
-  async function closePayroll() {
-    setClosing(true);
-    setMsg("");
-    try {
-      const r = await apiJson<{ ok: boolean; run_id?: string; error?: string }>("/api/pay-period/lock", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ period_start: startDate, period_end: endDate }),
-      });
-      if (!r.ok) throw new Error(r.error || "Unable to close payroll");
-      router.push(`/reports/payroll?start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}&locked=1`);
-    } catch (e: any) {
-      setMsg(e?.message || "Failed to close payroll");
-    } finally {
-      setClosing(false);
-    }
-  }
+  const payrollDeltaPct = pctChange(currentPayroll, previousPayroll);
+  const currency = summary?.currency || currentMonthSummary?.currency || "USD";
 
   async function previewClose() {
+    setPreviewBusy(true);
+    setMsg("");
     try {
-      setPreviewBusy(true);
-      setMsg("");
-      const res = await apiJson<{ ok: true; blocked: boolean; items: any[]; blockers: any[] }>("/api/pay-period/checklist", {
+      const json = await apiJson<any>("/api/pay-period/preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ period_start: startDate, period_end: endDate }),
       });
-      setCloseChecklist(res.items || []);
-      setBlockers(res.blockers || []);
-      const totals = (res.blockers || []).reduce((acc: any, row: any) => ({ entries: acc.entries + Number(row.entries_count || 0), hours: acc.hours + Number(row.hours || 0), amount: acc.amount + Number(row.amount || 0) }), { entries: 0, hours: 0, amount: 0 });
-      setBlockerTotals(totals);
-      setMsg((res.items || []).some((item: any) => item.status === "warn") ? "Payroll close is blocked. Review checklist items below." : "Ready to close. No blockers found.");
+      setBlockers(json.blockers || []);
+      setBlockerTotals(json.totals || null);
+      setCloseChecklist(json.checklist?.items || []);
     } catch (e: any) {
-      setMsg(e?.message || "Failed to preview close");
+      setMsg(e?.message || "Failed to preview payroll close.");
     } finally {
       setPreviewBusy(false);
     }
   }
 
+  async function closePayroll() {
+    const yes = window.confirm(`Lock payroll for ${startDate} → ${endDate}? This snapshots approved entries for payroll.`);
+    if (!yes) return;
+    setClosing(true);
+    setMsg("");
+    try {
+      await apiJson("/api/pay-period/lock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ period_start: startDate, period_end: endDate }),
+      });
+      setMsg("Payroll locked ✅");
+      setPeriodLocked(true);
+      await previewClose();
+    } catch (e: any) {
+      setMsg(e?.message || "Failed to lock payroll.");
+    } finally {
+      setClosing(false);
+    }
+  }
+
   return (
-    <>
+    <div style={{ display: "grid", gap: 14 }}>
       {msg ? (
         <div className="alert alertInfo">
           <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>{msg}</pre>
         </div>
       ) : null}
 
-      <div className="setuCompareGrid">
-        <div className="setuCompareCard setuCompareCardPrimary">
-          <div className="setuCompareLabel">Current month payroll</div>
-          <div className="setuCompareValue">${money(currentPayroll)}</div>
-          <div className="setuCompareMeta">{monthLabel(currentMonthRange.start)} • {currentHours.toFixed(2)} hrs</div>
-        </div>
-        <div className="setuCompareCard">
-          <div className="setuCompareLabel">Previous month payroll</div>
-          <div className="setuCompareValue">${money(previousPayroll)}</div>
-          <div className="setuCompareMeta">{monthLabel(previousMonthRange.start)} • {previousHours.toFixed(2)} hrs</div>
-        </div>
-        <div className="setuCompareCard">
-          <div className="setuCompareLabel">Payroll change</div>
-          <div className={`setuCompareValue ${payrollChange >= 0 ? "isPositive" : "isNegative"}`}>{payrollChange >= 0 ? "+" : ""}{payrollChange.toFixed(1)}%</div>
-          <div className="setuCompareMeta">Month over month payroll movement</div>
-        </div>
-        <div className="setuCompareCard">
-          <div className="setuCompareLabel">Hours change</div>
-          <div className={`setuCompareValue ${hoursChange >= 0 ? "isPositive" : "isNegative"}`}>{hoursChange >= 0 ? "+" : ""}{hoursChange.toFixed(1)}%</div>
-          <div className="setuCompareMeta">Current vs previous month hours</div>
-        </div>
-      </div>
-
       <MetricsRow>
-        <StatCard
-          label="Period"
-          value={monthLabel(startDate)}
-          hint={`${startDate} → ${endDate}`}
-          right={
-            <select className="pill" value={preset} onChange={(e) => setPreset(e.target.value as any)}>
-              <option value="current_month">Current month</option>
-              <option value="last_month">Last month</option>
-            </select>
-          }
-        />
-        <StatCard label="Approved cost" value={`$${money(Number(summary?.total_amount ?? approvedPay))}`} hint={`${Number(summary?.total_hours ?? approvedHours).toFixed(2)} hrs approved`} />
-        <StatCard label="Pending approvals" value={Number(summary?.pending_entries ?? pendingCount)} hint="Submitted entries" />
-        <StatCard label="Contractors" value={Number(summary?.active_contractors ?? contractors.length)} hint={busy ? "Loading…" : "Active in org"} />
+        <StatCard label="Approved hours" value={`${approvedHours.toFixed(2)} hrs`} hint={`${startDate} → ${endDate}`} />
+        <StatCard label="Approved payroll" value={`${currency} ${money(approvedPay)}`} hint={`${pendingCount} pending entries`} />
+        <StatCard label="Current month" value={`${currency} ${money(currentPayroll)}`} hint={`${monthLabel(currentMonthRange.start)}`} />
+        <StatCard label="vs last month" value={`${payrollDeltaPct >= 0 ? "+" : ""}${payrollDeltaPct.toFixed(1)}%`} hint={`${monthLabel(previousMonthRange.start)}`} />
       </MetricsRow>
 
-      <CardPad className="dbPayCard" style={{ marginTop: 14 }}>
+      <MetricsRow>
+        <StatCard label="Budget used" value={`${currency} ${money(Number(financials?.analytics.budget_used || 0))}`} hint={`${financials?.analytics.budget_risk_alerts || 0} project alerts`} />
+        <StatCard label="Budget remaining" value={`${currency} ${money(Number(financials?.analytics.budget_remaining || 0))}`} hint="Across tracked projects" />
+        <StatCard label="Incomplete profiles" value={`${financials?.analytics.incomplete_profiles || 0}`} hint="Payroll-required fields missing" />
+        <StatCard label="Export ledger" value={`${financials?.analytics.export_history_count || 0}`} hint="Tracked payroll exports" />
+      </MetricsRow>
+
+      <CardPad className="dbPayCard">
         <div className="dbPayHeader">
           <div>
-            <div className="dbPayTitle">Monthly close</div>
-            <div className="muted">Lock the period and generate a reproducible payroll snapshot.</div>
-            {summary?.payroll_state && summary.payroll_state !== "open" ? (
-              <div className="muted" style={{ marginTop: 6 }}>
-                Current state: <b>{String(summary.payroll_state)}</b>{summary?.closed_at ? ` • ${new Date(summary.closed_at).toLocaleString()}` : ""}
-              </div>
-            ) : null}
+            <div className="dbPayTitle">Financial operations</div>
+            <div className="muted">Budget exposure, contractor readiness, and payroll intelligence for the selected period.</div>
           </div>
-          {periodLocked ? (
-            <div style={{ textAlign: "right", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-              <StatusChip state="locked" />
-              <div className="muted" style={{ fontSize: 12 }}>{lockedAt ? new Date(lockedAt).toLocaleString() : ""}</div>
-            </div>
-          ) : (
-            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" }}>
-              <button className="pill" disabled={previewBusy} onClick={previewClose}>{previewBusy ? "Checking…" : "Preview close"}</button>
-              <button className="btnPrimary" disabled={closing} onClick={closePayroll}>{closing ? "Closing…" : "Close payroll"}</button>
-            </div>
-          )}
+          <div className="dbPayValue">{currency} {money(Number(financials?.analytics.total_payroll || summary?.total_amount || 0))}</div>
         </div>
 
-        {periodLocked ? (
-          <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button className="pill" onClick={() => router.push(`/reports/payroll?start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}&locked=1`)}>View payroll report</button>
-            <button className="pill" onClick={() => router.push("/reports/payroll-runs")}>Open payroll runs</button>
-          </div>
-        ) : (
-          <div style={{ marginTop: 10 }}>
-            <div className="muted">Tip: close only when all entries in this period are approved.</div>
-            {blockers && blockers.length > 0 ? (
-              <div style={{ marginTop: 10 }}>
-                <div style={{ fontWeight: 700, marginBottom: 6 }}>Blockers</div>
-                <div className="muted" style={{ marginBottom: 10 }}>{blockerTotals ? `${blockerTotals.entries} entries • ${blockerTotals.hours.toFixed(2)} hrs • $${money(blockerTotals.amount)}` : ""}</div>
-                <div style={{ overflowX: "auto" }}>
-                  <table className="table" style={{ width: "100%" }}>
-                    <thead>
-                      <tr>
-                        <th>Contractor</th>
-                        <th>Status</th>
-                        <th>Entries</th>
-                        <th>Hours</th>
-                        <th>Value</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {blockers.map((b, idx) => (
-                        <tr key={idx}>
-                          <td>{b.contractor_name}</td>
-                          <td>{b.status}</td>
-                          <td>{b.entries_count}</td>
-                          <td>{Number(b.hours || 0).toFixed(2)}</td>
-                          <td>${money(Number(b.amount || 0))}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ) : null}
-          </div>
-        )}
+        <div className="dbQuickGrid" style={{ marginTop: 14 }}>
+          <button className="dbQuickBtn" onClick={() => router.push("/reports/payroll")}>Payroll analytics<span className="muted">Project and contractor breakdowns</span></button>
+          <button className="dbQuickBtn" onClick={() => router.push("/projects")}>Project budgets<span className="muted">Budget, billing, remaining</span></button>
+          <button className="dbQuickBtn" onClick={() => router.push("/reports/payroll-runs")}>Payroll runs<span className="muted">Financial register and audit trail</span></button>
+        </div>
       </CardPad>
 
-      <SectionHeader title="Contractors" subtitle="Approved hours and cost for this period" right={<button className="pill" onClick={() => router.push("/admin/users")}>Manage people</button>} />
+      <div style={{ display: "grid", gridTemplateColumns: "1.35fr 1fr", gap: 14 }}>
+        <CardPad>
+          <SectionHeader title="Project budget watchlist" subtitle="Current payroll cost against tracked budgets" />
+          {financials?.project_budgets?.length ? (
+            <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+              {financials.project_budgets.slice(0, 6).map((row) => (
+                <div key={row.project_id} className="row" style={{ justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontWeight: 800 }}>{row.project_name}</div>
+                    <div className="muted" style={{ fontSize: 12 }}>
+                      Budget {row.currency} {money(row.budget_amount)} • Used {row.currency} {money(row.payroll_cost)} • Remaining {row.currency} {money(row.remaining_budget)}
+                    </div>
+                  </div>
+                  <StatusChip state={riskTone(row.risk)} label={row.risk === "untracked" ? "Untracked" : row.risk} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState title="No tracked budgets yet" description="Add a budget and billing rate on the Projects page to activate budget intelligence." />
+          )}
+        </CardPad>
 
-      {contractorCards.length === 0 ? (
-        <EmptyState title="No contractors yet" description="Invite contractors to start tracking time and running payroll." action={<button className="btnPrimary" onClick={() => router.push("/admin")}>Go to Admin</button>} />
-      ) : (
-        <div className="dbQuickGrid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" } as any}>
-          {contractorCards.map((c) => (
-            <button key={c.id} className="dbQuickBtn" onClick={() => router.push(`/reports/payroll?start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}&contractor=${encodeURIComponent(c.id)}`)} style={{ textAlign: "left" } as any}>
-              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
-                <div style={{ fontWeight: 950 }}>{c.name}</div>
-                <div className={c.status === "Pending" ? "pill" : "muted"}>{c.status}</div>
-              </div>
-              <span className="muted">{c.hours.toFixed(2)} hrs • ${money(c.pay)}</span>
-            </button>
-          ))}
+        <CardPad>
+          <SectionHeader title="Contractor profile readiness" subtitle="Payroll completeness score for active contractors" />
+          {financials?.profile_completeness?.length ? (
+            <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+              {financials.profile_completeness.slice(0, 6).map((row) => (
+                <div key={row.contractor_id} className="row" style={{ justifyContent: "space-between", gap: 12 }}>
+                  <div>
+                    <div style={{ fontWeight: 800 }}>{row.contractor_name}</div>
+                    <div className="muted" style={{ fontSize: 12 }}>{row.payroll_missing.length ? `Missing: ${row.payroll_missing.join(", ")}` : "Payroll-ready"}</div>
+                  </div>
+                  <StatusChip state={row.score === 100 ? "approved" : row.score >= 70 ? "submitted" : "rejected"} label={`${row.score}%`} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="muted" style={{ marginTop: 12 }}>No contractor profiles found.</div>
+          )}
+        </CardPad>
+      </div>
+
+      <CardPad>
+        <SectionHeader title="Payroll close control" subtitle="Preview blockers before locking a pay period" />
+        <div className="row" style={{ gap: 10, flexWrap: "wrap", marginTop: 12 }}>
+          <select className="select" value={preset} onChange={(e) => setPreset(e.target.value as any)}>
+            <option value="current_month">Current month</option>
+            <option value="last_month">Last month</option>
+          </select>
+          <button className="pill" onClick={previewClose} disabled={previewBusy}>{previewBusy ? "Checking…" : "Preview close"}</button>
+          <button className="btnPrimary" onClick={closePayroll} disabled={closing || periodLocked}>{periodLocked ? "Locked" : closing ? "Locking…" : "Lock payroll"}</button>
+          {periodLocked ? <StatusChip state="approved" label={lockedAt ? `Locked ${new Date(lockedAt).toLocaleString()}` : "Locked"} /> : null}
         </div>
-      )}
-    </>
+
+        {closeChecklist.length ? (
+          <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
+            {closeChecklist.map((item) => (
+              <div key={item.key} className="row" style={{ justifyContent: "space-between", gap: 12 }}>
+                <div>
+                  <div style={{ fontWeight: 700 }}>{item.label}</div>
+                  <div className="muted" style={{ fontSize: 12 }}>{item.detail || ""}</div>
+                </div>
+                <StatusChip state={item.status === "pass" ? "approved" : "rejected"} label={`${item.count}`} />
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </CardPad>
+
+      <CardPad>
+        <SectionHeader title="Contractor payroll view" subtitle="Approved pay by contractor for the selected range" />
+        {busy ? (
+          <div className="muted" style={{ marginTop: 12 }}>Loading…</div>
+        ) : contractorCards.length ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginTop: 12 }}>
+            {contractorCards.map((item) => (
+              <div key={item.id} className="card cardPad" style={{ boxShadow: "none" }}>
+                <div className="row" style={{ justifyContent: "space-between", gap: 12 }}>
+                  <div>
+                    <div style={{ fontWeight: 800 }}>{item.name}</div>
+                    <div className="muted" style={{ fontSize: 12 }}>{item.hours.toFixed(2)} hrs • Rate {currency} {money(item.rate)}</div>
+                  </div>
+                  <StatusChip state={item.status === "Ready" ? "approved" : "submitted"} label={item.status} />
+                </div>
+                <div style={{ fontWeight: 900, marginTop: 8 }}>{currency} {money(item.pay)}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="No contractor payroll in range" description="Approved payroll will appear here once time is ready for the selected period." />
+        )}
+      </CardPad>
+    </div>
   );
 }

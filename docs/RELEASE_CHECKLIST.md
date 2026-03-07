@@ -162,3 +162,10 @@ Focus: interaction polish + guardrails so exports feel “client deliverable” 
 - [ ] Run `0025_phase_2a_foundation.sql` in Supabase before deploy
 - [ ] Verify approvals queue for both admin and manager roles in production data
 - [ ] Verify monthly close checklist on dashboard before locking payroll
+
+
+## Phase 2B — Financial Intelligence Layer
+- project budget tracking is now schema-backed with billing rate + cost tracking fields
+- contractor payroll completeness now supports score-based readiness checks
+- payroll export ledger now records audit-ready export history
+- payroll run detail now exposes project allocation + export history context
