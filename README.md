@@ -27,6 +27,8 @@ npm run start
 
 Canonical brand constants live in:
 
+The current canonical `logo.svg` was rebuilt from the user-provided official PNG asset so the app now uses the correct SETU TRACK logo everywhere without changing the existing layout.
+
 - `src/config/brand.ts`
 
 Canonical logo assets live in:

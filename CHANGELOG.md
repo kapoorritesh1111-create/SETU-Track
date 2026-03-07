@@ -17,3 +17,13 @@
 
 ### Notes
 - Assumption used for this pass: the tagline is shown with the main brand lockup on login and shell branding surfaces, while footer attribution remains login-only.
+
+## 2026-03-07 — Official user logo asset correction
+
+### Changed
+- replaced the temporary generated logo with the official user-provided SETU TRACK PNG
+- regenerated `public/brand/logo.svg` from the provided PNG so the shared brand lockup uses the correct logo everywhere
+- updated `public/brand/logo@2x.png` to match the official provided logo
+
+### Notes
+- this pass only corrects the main logo asset and keeps the existing login/sidebar layout intact
