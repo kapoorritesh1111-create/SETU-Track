@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { requireManagerOrAdmin } from "../../../../lib/api/gates";
 import { budgetRiskLevel, getProfileCompletenessReport, variance } from "../../../../lib/domain/financial/overview";
 
+async function safeSelect<T>(run: () => Promise<{ data: T | null; error: { message: string } | null }>, fallback: T) {
+  const { data, error } = await run();
+  return { data: error ? fallback : (data ?? fallback), error };
+}
+
 function fmtDate(d: Date) {
   const y = d.getFullYear();
   const m = `${d.getMonth() + 1}`.padStart(2, "0");
@@ -37,11 +42,14 @@ export async function GET(req: Request) {
       { data: runs, error: runsErr },
     ] = await Promise.all([
       supa.from("projects").select("id,name,is_active").eq("org_id", profile.org_id).order("name", { ascending: true }),
-      supa
-        .from("project_budgets")
-        .select("id,project_id,budget_amount,billing_rate,currency,cost_tracking_enabled,effective_from,effective_to,note")
-        .eq("org_id", profile.org_id)
-        .order("effective_from", { ascending: false }),
+      safeSelect(
+        () => supa
+          .from("project_budgets")
+          .select("id,project_id,budget_amount,billing_rate,currency,cost_tracking_enabled,effective_from,effective_to,note")
+          .eq("org_id", profile.org_id)
+          .order("effective_from", { ascending: false }),
+        [] as any[]
+      ),
       supa
         .from("payroll_run_entries")
         .select("project_id,project_name_snapshot,contractor_id,contractor_name_snapshot,hours,amount,payroll_run_id")
@@ -52,18 +60,24 @@ export async function GET(req: Request) {
         .eq("org_id", profile.org_id)
         .eq("role", "contractor")
         .eq("is_active", true),
-      supa
-        .from("payroll_snapshots")
-        .select("id,snapshot_key,period_start,period_end,total_hours,total_amount,created_at,payroll_run_id")
-        .eq("org_id", profile.org_id)
-        .order("created_at", { ascending: false })
-        .limit(24),
-      supa
-        .from("export_history")
-        .select("id,payroll_run_id,export_type,exported_at,exported_by_name,file_format")
-        .eq("org_id", profile.org_id)
-        .order("exported_at", { ascending: false })
-        .limit(50),
+      safeSelect(
+        () => supa
+          .from("payroll_snapshots")
+          .select("id,snapshot_key,period_start,period_end,total_hours,total_amount,created_at,payroll_run_id")
+          .eq("org_id", profile.org_id)
+          .order("created_at", { ascending: false })
+          .limit(24),
+        [] as any[]
+      ),
+      safeSelect(
+        () => supa
+          .from("export_history")
+          .select("id,payroll_run_id,export_type,exported_at,exported_by_name,file_format")
+          .eq("org_id", profile.org_id)
+          .order("exported_at", { ascending: false })
+          .limit(50),
+        [] as any[]
+      ),
       supa
         .from("payroll_runs")
         .select("id,period_start,period_end,status,total_amount,total_hours,currency,created_at")
@@ -73,7 +87,7 @@ export async function GET(req: Request) {
         .order("created_at", { ascending: false }),
     ]);
 
-    const firstErr = projectsErr || budgetsErr || entriesErr || profilesErr || snapshotsErr || exportsErr || runsErr;
+    const firstErr = projectsErr || entriesErr || profilesErr || runsErr;
     if (firstErr) return NextResponse.json({ ok: false, error: firstErr.message }, { status: 400 });
 
     const runsInPeriod = (runs || []) as any[];

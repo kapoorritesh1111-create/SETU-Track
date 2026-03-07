@@ -7,6 +7,7 @@ import { useProfile } from "../../lib/useProfile";
 
 type OverviewPayload = {
   ok: true;
+  warnings?: string[];
   metrics: {
     active_contractors: number;
     hours_logged: number;
@@ -49,6 +50,7 @@ export default function CommandCenterHero() {
   const router = useRouter();
   const { profile } = useProfile() as any;
   const [data, setData] = useState<OverviewPayload | null>(null);
+  const [loadError, setLoadError] = useState("");
 
   const role = profile?.role || "contractor";
   const canLoadOverview = role === "admin" || role === "manager";
@@ -58,10 +60,14 @@ export default function CommandCenterHero() {
     if (!canLoadOverview) return;
     (async () => {
       try {
+        setLoadError("");
         const json = await apiJson<OverviewPayload>("/api/dashboard/overview");
         if (!cancelled) setData(json);
-      } catch {
-        if (!cancelled) setData(null);
+      } catch (e: any) {
+        if (!cancelled) {
+          setLoadError(e?.message || "Dashboard overview could not load.");
+          setData(null);
+        }
       }
     })();
     return () => {
@@ -72,10 +78,10 @@ export default function CommandCenterHero() {
   const metrics = useMemo(() => {
     if (!data) {
       return [
-        { label: "Active contractors", value: "—", hint: "Loading live org metrics", tone: "blue" as MetricTone },
-        { label: "Hours logged", value: "—", hint: "Current operational window", tone: "teal" as MetricTone },
-        { label: "Payroll ready", value: "—", hint: "Approved and exportable", tone: "teal" as MetricTone },
-        { label: "Approvals pending", value: "—", hint: "Needs manager attention", tone: "violet" as MetricTone },
+        { label: "Active contractors", value: "—", hint: loadError ? "Live metrics unavailable" : "Loading live org metrics", tone: "blue" as MetricTone },
+        { label: "Hours logged", value: "—", hint: loadError ? "Check dashboard service" : "Current operational window", tone: "teal" as MetricTone },
+        { label: "Payroll ready", value: "—", hint: loadError ? "Approvals still available below" : "Approved and exportable", tone: "teal" as MetricTone },
+        { label: "Approvals pending", value: "—", hint: loadError ? "Open approvals to continue" : "Needs manager attention", tone: "violet" as MetricTone },
       ];
     }
 
@@ -85,7 +91,7 @@ export default function CommandCenterHero() {
       { label: "Payroll ready", value: money(data.metrics.payroll_ready, data.metrics.currency), hint: "Approved and exportable", tone: "teal" as MetricTone },
       { label: "Approvals pending", value: String(data.metrics.approvals_pending), hint: "Manager action queue", tone: "violet" as MetricTone },
     ];
-  }, [data]);
+  }, [data, loadError]);
 
   const watchlist = data?.watchlist?.length
     ? data.watchlist.map((item) => ({
@@ -95,7 +101,7 @@ export default function CommandCenterHero() {
         tone: item.risk,
       }))
     : [
-        { title: "Project watchlist", meta: "Budget and payroll watchlist will populate here", status: "Monitoring", tone: "watch" },
+        { title: "Project watchlist", meta: loadError ? "Live watchlist could not load — open Analytics for detailed review." : "Budget and payroll watchlist will populate here", status: loadError ? "Needs check" : "Monitoring", tone: "watch" },
       ];
 
   return (
@@ -108,6 +114,8 @@ export default function CommandCenterHero() {
             <p className="setuHeroCopy">
               Operational status, payroll readiness, project budget health, and next actions now sit in one command surface.
             </p>
+            {loadError ? <div className="setuInlineAlert">Dashboard overview is unavailable right now. Core pages still work normally.</div> : null}
+            {data?.warnings?.length ? <div className="setuInlineHint">Some optional analytics sources were skipped so the dashboard could still load.</div> : null}
           </div>
 
           <div className="setuHeroActions">

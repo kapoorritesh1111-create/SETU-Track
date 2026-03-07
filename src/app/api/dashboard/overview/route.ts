@@ -17,6 +17,11 @@ function currentMonthRange() {
   };
 }
 
+async function safeSelect<T>(run: () => Promise<{ data: T | null; error: { message: string } | null }>, fallback: T) {
+  const { data, error } = await run();
+  return { data: error ? fallback : (data ?? fallback), error };
+}
+
 export async function GET(req: Request) {
   try {
     const gate = await requireManagerOrAdmin(req);
@@ -60,26 +65,34 @@ export async function GET(req: Request) {
         .from("payroll_run_entries")
         .select("payroll_run_id,project_id,project_name_snapshot,contractor_id,contractor_name_snapshot,hours,amount")
         .eq("org_id", profile.org_id),
-      supa
-        .from("project_budgets")
-        .select("project_id,budget_amount,billing_rate,currency,effective_from")
-        .eq("org_id", profile.org_id)
-        .order("effective_from", { ascending: false }),
+      safeSelect(
+        () => supa
+          .from("project_budgets")
+          .select("project_id,budget_amount,billing_rate,currency,effective_from")
+          .eq("org_id", profile.org_id)
+          .order("effective_from", { ascending: false }),
+        [] as any[]
+      ),
       supa
         .from("projects")
         .select("id,name,is_active")
         .eq("org_id", profile.org_id)
         .order("name", { ascending: true }),
-      supa
-        .from("export_history")
-        .select("id,export_type,exported_at,exported_by_name,file_format,label,project_name,payroll_run_status")
-        .eq("org_id", profile.org_id)
-        .order("exported_at", { ascending: false })
-        .limit(8),
+      safeSelect(
+        () => supa
+          .from("export_history")
+          .select("id,export_type,exported_at,exported_by_name,file_format,label,project_name,payroll_run_status")
+          .eq("org_id", profile.org_id)
+          .order("exported_at", { ascending: false })
+          .limit(8),
+        [] as any[]
+      ),
     ]);
 
-    const firstErr = entriesErr || contractorsErr || runsErr || runEntriesErr || budgetsErr || projectsErr || exportsErr;
+    const firstErr = entriesErr || contractorsErr || runsErr || runEntriesErr || projectsErr;
     if (firstErr) return NextResponse.json({ ok: false, error: firstErr.message }, { status: 400 });
+
+    const warnings = [budgetsErr?.message, exportsErr?.message].filter(Boolean);
 
     const contractorCount = (contractors || []).length;
     let hoursLogged = 0;
@@ -156,11 +169,15 @@ export async function GET(req: Request) {
         meta: `${String(item.file_format || "file").toUpperCase()}${item.project_name ? ` • ${item.project_name}` : ""}`,
         at: item.exported_at,
       })),
-    ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, 6);
+    ]
+      .filter((item) => !!item.at)
+      .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+      .slice(0, 6);
 
     return NextResponse.json({
       ok: true,
       range: { start, end },
+      warnings,
       metrics: {
         active_contractors: contractorCount,
         hours_logged: hoursLogged,

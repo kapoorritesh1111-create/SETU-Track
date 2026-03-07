@@ -184,7 +184,14 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
         </div>
 
         <div className="mwTopRight" ref={menuRef}>
-          <button type="button" className="mwProfileBtn" onClick={() => setMenuOpen((v) => !v)}>
+          <button
+            type="button"
+            className="mwProfileBtn"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            aria-label="Open account menu"
+          >
             <span className="mwAvatar">{initials(fullName)}</span>
 
             <span className="mwProfileMeta">
@@ -405,7 +412,7 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
         </div>
       )}
 
-      <main className="container">
+      <main id="main-content" className="container">
         {(title || subtitle || right) && (
           <div className="pageHeader">
             <div>

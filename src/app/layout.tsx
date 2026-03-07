@@ -39,6 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en" data-theme="light" data-accent="blue" data-density="comfortable" data-radius="lg">
       <body>
+        <a className="skipLink" href="#main-content">Skip to content</a>
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

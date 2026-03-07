@@ -1210,3 +1210,102 @@ html[data-theme="dark"] .setuWorkspaceValue { color: var(--setu-text); }
 @media (max-width: 560px) {
   .setuMetricsGrid, .setuHeroMetrics, .setuWorkspaceStrip { grid-template-columns: 1fr !important; }
 }
+
+/* ---------- 2026-03-07 audit + polish pass ---------- */
+:root {
+  --header-h: 72px;
+  --sidebar-w: 232px;
+}
+body {
+  background:
+    radial-gradient(1200px 420px at 100% 0%, rgba(34, 199, 184, 0.10), transparent 46%),
+    linear-gradient(180deg, #eef4fb 0%, #f4f8fc 128px, #f4f8fc 100%);
+}
+.skipLink {
+  position: absolute;
+  left: 16px;
+  top: 8px;
+  z-index: 999;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--setu-navy-900);
+  color: #fff;
+  transform: translateY(-160%);
+}
+.skipLink:focus-visible { transform: translateY(0); }
+.pageHeader {
+  min-height: 0;
+  padding: 16px 20px;
+}
+.pageTitle {
+  font-size: clamp(1.75rem, 2vw, 2.25rem);
+  line-height: 1.05;
+}
+.mwTopInner {
+  background: rgba(255,255,255,0.9);
+  box-shadow: 0 8px 22px rgba(7, 26, 51, 0.05);
+}
+.mwSidebar {
+  padding: 18px 14px 20px;
+}
+.mwSidebarBrandHero {
+  padding: 14px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+  border: 1px solid rgba(255,255,255,0.10);
+}
+.mwSidebarLogo {
+  width: 120px;
+}
+.mwSidebarBrandTitle {
+  font-size: 18px;
+}
+.mwSideItem {
+  min-height: 42px;
+  font-size: 14px;
+}
+.setuHeroTitle {
+  font-size: clamp(2rem, 3vw, 2.6rem);
+}
+.setuHeroCopy {
+  max-width: 64ch;
+}
+.setuHeroMetricValue,
+.setuWorkspaceValue {
+  font-size: clamp(1.6rem, 2.3vw, 2.1rem);
+}
+.setuInlineAlert {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  color: #9a5a08;
+  font-size: 13px;
+  font-weight: 700;
+}
+.setuInlineHint {
+  margin-top: 10px;
+  color: var(--setu-muted);
+  font-size: 12px;
+}
+.peopleSearch,
+.select,
+.nativeControl {
+  min-height: 42px;
+}
+.table th,
+.table td {
+  font-size: 13px;
+}
+.analyticsBarLabel {
+  text-align: center;
+  line-height: 1.35;
+}
+.setuExportTable .table td,
+.setuExportTable .table th {
+  vertical-align: top;
+}
+@media (max-width: 1080px) {
+  :root { --sidebar-w: 0px; }
+}
