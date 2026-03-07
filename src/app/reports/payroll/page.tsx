@@ -338,6 +338,12 @@ export default function PayrollReportPage() {
             </label>
           </div>
 
+          <div className="setuFilterMeta">
+            <span className="pill">{payload?.range.start || "—"} → {payload?.range.end || "—"}</span>
+            <span className="pill">{periodScope === "closed_only" ? "Closed periods only" : "Open + closed periods"}</span>
+            <span className="pill">View: {view === "project" ? "Project summary" : view === "contractor" ? "Contractor summary" : "Payroll register"}</span>
+          </div>
+
           {preset === "custom" ? (
             <div className="setuCustomRangeRow">
               <label className="setuField"><span>Start</span><input className="input" type="date" value={start} onChange={(e) => setStart(e.target.value)} /></label>
@@ -347,13 +353,17 @@ export default function PayrollReportPage() {
           ) : null}
 
           <div className="setuViewToolbar">
-            <div className="setuSegmented">
+            <div className="setuViewToolbarLeft">
+              <div className="setuSegmented">
               <button className={view === "project" ? "segActive" : ""} onClick={() => setView("project")}>By Project</button>
               <button className={view === "contractor" ? "segActive" : ""} onClick={() => setView("contractor")}>By Contractor</button>
               <button className={view === "register" ? "segActive" : ""} onClick={() => setView("register")}>Register</button>
+              </div>
+              <input className="input setuToolbarSearch" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search project, person, id, or period" />
             </div>
-            <input className="input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search project, person, id, or period" />
-            <Button variant="secondary" onClick={() => void load()}>Run report</Button>
+            <div className="setuViewToolbarRight">
+              <Button variant="secondary" onClick={() => void load()}>Run report</Button>
+            </div>
           </div>
         </div>
 

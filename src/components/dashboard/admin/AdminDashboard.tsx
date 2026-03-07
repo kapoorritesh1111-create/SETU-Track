@@ -6,10 +6,8 @@ import { supabase } from "../../../lib/supabaseBrowser";
 import { apiJson } from "../../../lib/api/client";
 import { presetToRange } from "../../../lib/dateRanges";
 import { CardPad } from "../../ui/Card";
-import { StatCard } from "../../ui/StatCard";
 import { SectionHeader } from "../../ui/SectionHeader";
 import { EmptyState } from "../../ui/EmptyState";
-import { MetricsRow } from "../../ui/MetricsRow";
 import { StatusChip } from "../../ui/StatusChip";
 
 type Contractor = { id: string; full_name: string | null; hourly_rate: number | null };
@@ -313,35 +311,120 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
         </div>
       ) : null}
 
-      <MetricsRow>
-        <StatCard label="Approved hours" value={`${approvedHours.toFixed(2)} hrs`} hint={`${startDate} → ${endDate}`} />
-        <StatCard label="Approved payroll" value={`${currency} ${money(approvedPay)}`} hint={`${pendingCount} pending entries`} />
-        <StatCard label="Current month" value={`${currency} ${money(currentPayroll)}`} hint={`${monthLabel(currentMonthRange.start)}`} />
-        <StatCard label="vs last month" value={`${payrollDeltaPct >= 0 ? "+" : ""}${payrollDeltaPct.toFixed(1)}%`} hint={`${monthLabel(previousMonthRange.start)}`} />
-      </MetricsRow>
+      <div className="setuExecutiveGrid">
+        <div className="setuCompareCard setuCompareCardPrimary">
+          <div className="setuCompareLabel">Current payroll workspace</div>
+          <div className="setuCompareValue">{currency} {money(Number(financials?.analytics.total_payroll || summary?.total_amount || 0))}</div>
+          <div className="setuCompareMeta">{startDate} → {endDate} • {approvedHours.toFixed(2)} approved hrs</div>
+        </div>
+        <div className="setuCompareCard">
+          <div className="setuCompareLabel">Pending approvals</div>
+          <div className="setuCompareValue">{pendingCount}</div>
+          <div className="setuCompareMeta">Submitted entries still blocking payroll readiness</div>
+        </div>
+        <div className="setuCompareCard">
+          <div className="setuCompareLabel">Current month payroll</div>
+          <div className="setuCompareValue">{currency} {money(currentPayroll)}</div>
+          <div className="setuCompareMeta">{monthLabel(currentMonthRange.start)}</div>
+        </div>
+        <div className="setuCompareCard">
+          <div className="setuCompareLabel">Month-over-month</div>
+          <div className="setuCompareValue">{payrollDeltaPct >= 0 ? "+" : ""}{payrollDeltaPct.toFixed(1)}%</div>
+          <div className="setuCompareMeta">Compared with {monthLabel(previousMonthRange.start)}</div>
+        </div>
+      </div>
 
-      <MetricsRow>
-        <StatCard label="Budget used" value={`${currency} ${money(Number(financials?.analytics.budget_used || 0))}`} hint={`${financials?.analytics.budget_risk_alerts || 0} project alerts`} />
-        <StatCard label="Budget remaining" value={`${currency} ${money(Number(financials?.analytics.budget_remaining || 0))}`} hint="Across tracked projects" />
-        <StatCard label="Incomplete profiles" value={`${financials?.analytics.incomplete_profiles || 0}`} hint="Payroll-required fields missing" />
-        <StatCard label="Export ledger" value={`${financials?.analytics.export_history_count || 0}`} hint="Tracked payroll exports" />
-      </MetricsRow>
-
-      <CardPad className="dbPayCard">
-        <div className="dbPayHeader">
-          <div>
-            <div className="dbPayTitle">Financial operations</div>
-            <div className="muted">Budget exposure, contractor readiness, and payroll intelligence for the selected period.</div>
+      <div className="setuDashboardSplit">
+        <CardPad className="setuWorkspaceCard">
+          <SectionHeader title="Operational focus" subtitle="What needs attention before finance can close the period" />
+          <div className="setuMiniStatGrid" style={{ marginTop: 12 }}>
+            <div className="setuMiniStat">
+              <span>Approvals pending</span>
+              <strong>{pendingCount}</strong>
+              <small>Submitted entries in queue</small>
+            </div>
+            <div className="setuMiniStat">
+              <span>Missing profile data</span>
+              <strong>{financials?.analytics.incomplete_profiles || 0}</strong>
+              <small>Payroll-required fields missing</small>
+            </div>
+            <div className="setuMiniStat">
+              <span>Budget alerts</span>
+              <strong>{financials?.analytics.budget_risk_alerts || 0}</strong>
+              <small>Projects trending to watch or overrun</small>
+            </div>
+            <div className="setuMiniStat">
+              <span>Export receipts</span>
+              <strong>{financials?.analytics.export_history_count || 0}</strong>
+              <small>Tracked payroll export history</small>
+            </div>
           </div>
-          <div className="dbPayValue">{currency} {money(Number(financials?.analytics.total_payroll || summary?.total_amount || 0))}</div>
-        </div>
 
-        <div className="dbQuickGrid" style={{ marginTop: 14 }}>
-          <button className="dbQuickBtn" onClick={() => router.push("/reports/payroll")}>Payroll analytics<span className="muted">Project and contractor breakdowns</span></button>
-          <button className="dbQuickBtn" onClick={() => router.push("/projects")}>Project budgets<span className="muted">Budget, billing, remaining</span></button>
-          <button className="dbQuickBtn" onClick={() => router.push("/reports/payroll-runs")}>Payroll runs<span className="muted">Financial register and audit trail</span></button>
-        </div>
-      </CardPad>
+          <div className="setuListRows" style={{ marginTop: 14 }}>
+            <div className="setuListRow">
+              <div>
+                <strong>Payroll state</strong>
+                <div className="muted">Current period status and close behavior</div>
+              </div>
+              <StatusChip state={periodLocked ? "approved" : pendingCount ? "submitted" : "open"} label={periodLocked ? "Locked" : pendingCount ? "Needs review" : "Ready"} />
+            </div>
+            <div className="setuListRow">
+              <div>
+                <strong>Approved payroll</strong>
+                <div className="muted">Entries approved and ready for lock</div>
+              </div>
+              <div className="setuListValue">{currency} {money(approvedPay)}</div>
+            </div>
+            <div className="setuListRow">
+              <div>
+                <strong>Active contractors</strong>
+                <div className="muted">Workers contributing to this period</div>
+              </div>
+              <div className="setuListValue">{summary?.active_contractors ?? contractors.length}</div>
+            </div>
+          </div>
+
+          <div className="setuActionCluster" style={{ marginTop: 14 }}>
+            <button className="dbQuickBtn" onClick={() => router.push("/approvals")}>Review approvals<span className="muted">Resolve blockers and move time into payroll</span></button>
+            <button className="dbQuickBtn" onClick={() => router.push("/reports/payroll")}>Open payroll report<span className="muted">Project, contractor, and register-level visibility</span></button>
+            <button className="dbQuickBtn" onClick={() => router.push("/reports/payroll-runs")}>Review payroll runs<span className="muted">Audit trail, receipts, and paid status</span></button>
+          </div>
+        </CardPad>
+
+        <CardPad className="setuWorkspaceCard">
+          <SectionHeader title="Financial picture" subtitle="Budget coverage, payroll totals, and readiness signals" />
+          <div className="setuListRows" style={{ marginTop: 12 }}>
+            <div className="setuListRow">
+              <div>
+                <strong>Budget used</strong>
+                <div className="muted">Tracked project budget burn in view</div>
+              </div>
+              <div className="setuListValue">{currency} {money(Number(financials?.analytics.budget_used || 0))}</div>
+            </div>
+            <div className="setuListRow">
+              <div>
+                <strong>Budget remaining</strong>
+                <div className="muted">Across tracked projects</div>
+              </div>
+              <div className="setuListValue">{currency} {money(Number(financials?.analytics.budget_remaining || 0))}</div>
+            </div>
+            <div className="setuListRow">
+              <div>
+                <strong>Payroll variance</strong>
+                <div className="muted">Change from the prior payroll window</div>
+              </div>
+              <div className="setuListValue">{currency} {money(Number(financials?.analytics.payroll_variance?.delta || 0))}</div>
+            </div>
+            <div className="setuListRow">
+              <div>
+                <strong>Closed snapshot</strong>
+                <div className="muted">Last locked payroll state</div>
+              </div>
+              <div className="setuListValue">{summary?.payroll_state || (periodLocked ? "locked" : "open")}</div>
+            </div>
+          </div>
+        </CardPad>
+      </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1.35fr 1fr", gap: 14 }}>
         <CardPad>

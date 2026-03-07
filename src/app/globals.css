@@ -257,10 +257,34 @@ p { margin: 0; }
 .setuTrendFill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--setu-indigo-700), var(--setu-saffron-600)); }
 .setuRegisterTable td, .setuRegisterTable th { white-space: nowrap; }
 
+.setuFilterMeta, .setuViewToolbarLeft, .setuViewToolbarRight { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.setuFilterMeta { margin-top: 12px; }
+.setuToolbarSearch { min-width: 280px; }
+.setuExecutiveGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.setuDashboardSplit { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(300px, .95fr); gap: 18px; }
+.setuMiniStatGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.setuMiniStat {
+  display: grid; gap: 4px; padding: 14px 16px; border-radius: 18px;
+  border: 1px solid var(--setu-border); background: rgba(255,255,255,0.75);
+}
+.setuMiniStat span { font-size: 12px; font-weight: 800; color: var(--setu-muted); text-transform: uppercase; letter-spacing: .04em; }
+.setuMiniStat strong { font-size: 22px; font-weight: 900; color: var(--setu-indigo-900); }
+.setuMiniStat small { color: var(--setu-muted); font-size: 12px; }
+.setuListRows { display: grid; gap: 10px; }
+.setuListRow {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 14px 16px; border-radius: 18px; border: 1px solid var(--setu-border); background: rgba(255,255,255,0.74);
+}
+.setuListValue { font-size: 15px; font-weight: 900; color: var(--setu-indigo-900); }
+.setuActionCluster { display: grid; gap: 12px; }
+.setuActionCluster .dbQuickBtn { text-align: left; display: grid; gap: 6px; }
+.setuActionCluster .dbQuickBtn .muted { font-size: 12px; }
+
 /* Responsiveness */
 @media (max-width: 1200px) {
   .setuFilterGrid { grid-template-columns: repeat(3, minmax(0,1fr)); }
-  .setuMetricsGrid, .dbKpis, .metricsRow { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .setuMetricsGrid, .dbKpis, .metricsRow, .setuExecutiveGrid, .setuMiniStatGrid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .setuDashboardSplit { grid-template-columns: 1fr; }
 }
 @media (max-width: 920px) {
   .mwSidebar { display: none; }
@@ -268,8 +292,9 @@ p { margin: 0; }
   .mwHamburger { display: inline-flex; align-items: center; justify-content: center; }
   .mwDrawerOverlay { display: block; }
   .container { margin-left: 0; padding: 16px 14px 24px; }
-  .pageHeader, .setuViewToolbar, .setuCardHeaderRow, .dbPayHeader { flex-direction: column; align-items: stretch; }
-  .setuFilterGrid, .setuMetricsGrid, .setuInsightGrid, .setuContentGrid, .grid2, .dbKpis, .metricsRow { grid-template-columns: 1fr; }
+  .pageHeader, .setuViewToolbar, .setuCardHeaderRow, .dbPayHeader, .setuListRow { flex-direction: column; align-items: stretch; }
+  .setuFilterGrid, .setuMetricsGrid, .setuInsightGrid, .setuContentGrid, .grid2, .dbKpis, .metricsRow, .setuExecutiveGrid, .setuMiniStatGrid, .setuDashboardSplit { grid-template-columns: 1fr; }
+  .setuToolbarSearch { min-width: 0; width: 100%; }
 }
 @media (max-width: 640px) {
   .mwProfileMeta { display: none; }
