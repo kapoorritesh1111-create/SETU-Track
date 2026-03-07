@@ -20,6 +20,7 @@ import {
   FileText,
   CreditCard,
   Building2,
+  BarChart3,
 } from "lucide-react";
 
 type Props = {
@@ -68,7 +69,7 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
   const navItems: NavItem[] = useMemo(
     () =>
       [
-        { label: "Home", href: "/dashboard", icon: <LayoutDashboard size={16} /> },
+        { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard size={16} /> },
         { label: "My work", href: "/timesheet", icon: <Clock3 size={16} /> },
         {
           label: "Approvals",
@@ -96,13 +97,19 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
           hideIf: (r: string) => r !== "admin",
         },
         {
+          label: "Analytics",
+          href: "/analytics",
+          icon: <BarChart3 size={16} />,
+          hideIf: (r: string) => r === "contractor",
+        },
+        {
           label: "Exports",
           href: "/admin/exports",
           icon: <Shield size={16} />,
           hideIf: (r: string) => r !== "admin",
         },
         {
-          label: "Org Settings",
+          label: "Admin settings",
           href: "/admin/org-settings",
           icon: <Building2 size={16} />,
           hideIf: (r: string) => r !== "admin",
@@ -268,9 +275,9 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
               />
             </span>
             <span className="mwSidebarBrandCopy">
-              <span className="mwSidebarEyebrow">SETU GROUP</span>
+              <span className="mwSidebarEyebrow">CONNECT • TRACK • GROW</span>
               <span className="mwSidebarBrandTitle">SETU TRACK</span>
-              <span className="mwSidebarBrandCaption">Time, payroll, and export operations</span>
+              <span className="mwSidebarBrandCaption">Contractor operations, payroll intelligence, and analytics</span>
             </span>
           </button>
 
@@ -311,9 +318,9 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
                   <img className="mwSidebarKnot" src="/brand/setu-knot-icon.svg" alt="" aria-hidden="true" />
                 </span>
                 <span className="mwSidebarBrandCopy">
-                  <span className="mwSidebarEyebrow">SETU GROUP</span>
+                  <span className="mwSidebarEyebrow">CONNECT • TRACK • GROW</span>
                   <span className="mwSidebarBrandTitle">SETU TRACK</span>
-                  <span className="mwSidebarBrandCaption">Time, payroll, and export operations</span>
+                  <span className="mwSidebarBrandCaption">Contractor operations, payroll intelligence, and analytics</span>
                 </span>
               </button>
 

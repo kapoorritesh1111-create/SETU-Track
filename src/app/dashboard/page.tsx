@@ -11,6 +11,7 @@ import { isProfileComplete } from "../../lib/profileCompletion";
 import AdminDashboard from "../../components/dashboard/admin/AdminDashboard";
 import ManagerDashboard from "../../components/dashboard/manager/ManagerDashboard";
 import ContractorDashboard from "../../components/dashboard/contractor/ContractorDashboard";
+import CommandCenterHero from "../../components/setu/CommandCenterHero";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -67,6 +68,7 @@ export default function DashboardPage() {
   return (
     <RequireOnboarding>
       <AppShell title="Dashboard" subtitle={subtitle} right={headerRight}>
+        <CommandCenterHero />
         {role === "admin" ? (
           <AdminDashboard orgId={profile.org_id} userId={userId} />
         ) : role === "manager" ? (

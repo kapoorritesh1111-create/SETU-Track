@@ -927,3 +927,255 @@ textarea.nativeControl {
   color: #92400e;
   border: 1px solid rgba(245, 158, 11, 0.24);
 }
+
+body {
+  background:
+    radial-gradient(circle at top right, rgba(34,199,184,0.16), transparent 22%),
+    radial-gradient(circle at top left, rgba(31,111,229,0.10), transparent 20%),
+    linear-gradient(180deg, #f7fbff 0%, var(--setu-bg) 180px, var(--setu-bg) 100%);
+}
+
+h1,h2,h3,h4,h5,h6 { color: var(--setu-navy-900); }
+html[data-theme="dark"] h1,
+html[data-theme="dark"] h2,
+html[data-theme="dark"] h3,
+html[data-theme="dark"] h4,
+html[data-theme="dark"] h5,
+html[data-theme="dark"] h6 { color: var(--setu-text); }
+
+.pageHeader,
+.card,
+.statCard,
+.setuFilterBar,
+.setuHeroCard,
+.setuChartCard,
+.setuMainCard,
+.setuSideCard,
+.setuMetricCard {
+  background: color-mix(in srgb, var(--setu-surface) 90%, transparent);
+  box-shadow: var(--shadow-soft);
+}
+
+.mwTopInner {
+  background: color-mix(in srgb, var(--setu-surface) 78%, transparent);
+  border-bottom-color: rgba(13,32,56,0.08);
+}
+
+.mwSidebar,
+.mwDrawer {
+  background: var(--setu-gradient-dark);
+}
+
+.mwSidebarBrandHero,
+.mwBrandButton {
+  border-radius: 24px;
+}
+
+.mwSidebarBrandHero {
+  padding: 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.mwSidebarBrandMark,
+.mwHeaderBrandMark {
+  border-radius: 18px;
+  background: rgba(255,255,255,0.10);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+.mwSideItemActive {
+  background: linear-gradient(135deg, rgba(31,111,229,0.95), rgba(34,199,184,0.88));
+}
+
+.mwOrgBadge {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.setuCommandCenter {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(300px, .9fr);
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.setuHeroPanel,
+.setuWatchPanel,
+.setuWorkspaceCard {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--setu-border);
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(247,251,255,0.98));
+  box-shadow: var(--shadow-card);
+}
+
+html[data-theme="dark"] .setuHeroPanel,
+html[data-theme="dark"] .setuWatchPanel,
+html[data-theme="dark"] .setuWorkspaceCard {
+  background: linear-gradient(180deg, rgba(12,35,65,0.98), rgba(16,43,77,0.98));
+}
+
+.setuHeroPanel::before,
+.setuWatchPanel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(34,199,184,0.16), transparent 26%);
+  pointer-events: none;
+}
+
+.setuHeroPanel { padding: 22px; }
+.setuWatchPanel { padding: 20px; }
+.setuHeroHeader,
+.setuWatchHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.setuEyebrow {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #0c6b78;
+  background: rgba(34,199,184,0.14);
+}
+.setuHeroTitle { margin-top: 12px; font-size: 30px; line-height: 1.05; max-width: 760px; }
+.setuHeroCopy { margin-top: 10px; max-width: 720px; color: var(--setu-muted); line-height: 1.55; }
+.setuHeroActions { display: flex; gap: 10px; flex-wrap: wrap; }
+.setuHeroMetrics,
+.setuWorkspaceStrip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+.setuHeroMetric,
+.setuWorkspaceCard { padding: 16px; }
+.setuHeroMetric {
+  border-radius: 20px;
+  border: 1px solid rgba(13,32,56,0.06);
+  min-height: 122px;
+}
+.setuHeroMetricLabel,
+.setuWorkspaceLabel {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--setu-muted);
+}
+.setuHeroMetricValue,
+.setuWorkspaceValue {
+  margin-top: 10px;
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 950;
+  color: var(--setu-navy-900);
+}
+html[data-theme="dark"] .setuHeroMetricValue,
+html[data-theme="dark"] .setuWorkspaceValue { color: var(--setu-text); }
+.setuHeroMetricHint,
+.setuWorkspaceHint {
+  margin-top: 10px;
+  color: var(--setu-muted);
+  font-size: 13px;
+}
+.setu-tone-blue { background: linear-gradient(180deg, rgba(31,111,229,0.08), rgba(31,111,229,0.02)); }
+.setu-tone-teal { background: linear-gradient(180deg, rgba(34,199,184,0.12), rgba(34,199,184,0.03)); }
+.setu-tone-violet { background: linear-gradient(180deg, rgba(98,90,230,0.12), rgba(98,90,230,0.03)); }
+.setu-tone-amber { background: linear-gradient(180deg, rgba(245,158,11,0.12), rgba(245,158,11,0.03)); }
+.setuWatchTitle { margin-top: 12px; font-size: 20px; }
+.setuWatchList { display: grid; gap: 12px; margin-top: 18px; }
+.setuWatchItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 0;
+  border-top: 1px solid rgba(13,32,56,0.08);
+}
+.setuWatchItem:first-child { border-top: 0; padding-top: 0; }
+.setuWatchItemTitle { font-weight: 800; }
+.setuWatchItemMeta { margin-top: 4px; color: var(--setu-muted); font-size: 13px; }
+
+.setuWorkspaceStrip { margin-bottom: 18px; }
+
+.analyticsGrid {
+  display: grid;
+  gap: 18px;
+}
+.analyticsSplit {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(300px, .9fr);
+  gap: 18px;
+}
+.analyticsCard {
+  border: 1px solid var(--setu-border);
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--setu-surface) 92%, transparent);
+  box-shadow: var(--shadow-soft);
+  padding: 20px;
+}
+.analyticsTitle { font-size: 20px; font-weight: 900; }
+.analyticsHint { margin-top: 6px; color: var(--setu-muted); }
+.analyticsChart {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0,1fr));
+  gap: 12px;
+  align-items: end;
+  min-height: 220px;
+}
+.analyticsBarWrap { display: grid; gap: 8px; justify-items: center; }
+.analyticsBar {
+  width: 100%;
+  border-radius: 16px 16px 6px 6px;
+  background: var(--setu-gradient-main);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+}
+.analyticsBarLabel { font-size: 12px; color: var(--setu-muted); }
+.analyticsList { display: grid; gap: 12px; margin-top: 18px; }
+.analyticsListItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 0;
+  border-top: 1px solid rgba(13,32,56,0.08);
+}
+.analyticsListItem:first-child { padding-top: 0; border-top: 0; }
+.analyticsListTitle { font-weight: 800; }
+.analyticsListMeta { margin-top: 4px; color: var(--setu-muted); font-size: 13px; }
+.analyticsRight { text-align: right; }
+
+@media (max-width: 1100px) {
+  .setuCommandCenter,
+  .analyticsSplit { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 900px) {
+  .setuHeroMetrics,
+  .setuWorkspaceStrip,
+  .dbKpis,
+  .metricsRow,
+  .setuMetricsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .setuHeroMetrics,
+  .setuWorkspaceStrip,
+  .dbKpis,
+  .metricsRow,
+  .setuMetricsGrid,
+  .analyticsChart { grid-template-columns: 1fr; }
+}
