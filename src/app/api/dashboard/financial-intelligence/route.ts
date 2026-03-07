@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { requireManagerOrAdmin } from "../../../../lib/api/gates";
 import { budgetRiskLevel, getProfileCompletenessReport, variance } from "../../../../lib/domain/financial/overview";
 
-async function safeSelect<T>(run: () => Promise<{ data: T | null; error: { message: string } | null }>, fallback: T) {
+type SelectResult<T> = { data: T | null; error: { message: string } | null };
+
+async function safeSelect<T>(run: () => PromiseLike<SelectResult<T>>, fallback: T): Promise<SelectResult<T>> {
   const { data, error } = await run();
   return { data: error ? fallback : (data ?? fallback), error };
 }
