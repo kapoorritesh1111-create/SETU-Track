@@ -471,7 +471,7 @@ useEffect(() => {
               Clear selection
             </button>
             <button
-              className="btnPrimary"
+              className="btn btnPrimary"
               type="button"
               onClick={approveSelected}
               disabled={busyKey === "batch" || loading}
@@ -536,7 +536,7 @@ useEffect(() => {
         footer={
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
             <button
-              className="pill"
+              className="btn btnSecondary"
               onClick={() => {
                 setRejecting(null);
                 setRejectReason("");
@@ -546,7 +546,7 @@ useEffect(() => {
             >
               Cancel
             </button>
-            <button className="btnDanger" onClick={confirmReject} disabled={!!busyKey} type="button">
+            <button className="btn btnDanger" onClick={confirmReject} disabled={!!busyKey} type="button">
               {busyKey ? "Working…" : "Reject"}
             </button>
           </div>
@@ -616,7 +616,7 @@ useEffect(() => {
                   </div>
 
                   <div className="apGroupRight">
-<label style={{ display: "flex", gap: 8, alignItems: "center", marginRight: 10 }}>
+<label className="apSelectToggle">
                       <input
                         type="checkbox"
                         checked={!!selectedGroups[g.key]}
@@ -631,11 +631,11 @@ useEffect(() => {
                     </div>
 
                     <div className="apGroupActions">
-                      <button className="pill" onClick={() => setExpanded((p) => ({ ...p, [g.key]: !p[g.key] }))} disabled={busyKey === g.key}>
+                      <button className="btn btnSecondary btnSm" onClick={() => setExpanded((p) => ({ ...p, [g.key]: !p[g.key] }))} disabled={busyKey === g.key} type="button">
                         {isOpen ? "Hide details" : "View details"}
                       </button>
                       <button
-                        className="btnPrimary"
+                        className="btn btnPrimary"
                         onClick={() => approveGroup(g)}
                         disabled={busyKey === g.key || isLocked}
                         title={isLocked ? "Locked pay period" : "Approve"}

@@ -145,18 +145,32 @@ export default function PayrollRunsPage() {
           />
         </SummaryBar>
 
-        <TrustBlock
-          tone={msg ? "warn" : "neutral"}
-          subtitle={
-            "Runs are immutable snapshots generated when a pay period is locked. Use exports for audit-grade records."
-          }
-          items={[
-            { label: "Last refreshed", value: loadedAt ? new Date(loadedAt).toLocaleString() : "—" },
-            { label: "Data scope", value: "Org-wide (admin)", mono: false },
-            { label: "Exports", value: "Summary + Detail CSV", mono: false },
-            { label: "Status model", value: "Locked → Paid", mono: false },
-          ]}
-        />
+        <div className="card cardPad payRunSummaryText">
+          <div>
+            <div className="label">Trust & audit</div>
+            <div style={{ marginTop: 6, fontWeight: 800, color: "var(--setu-indigo-900)" }}>
+              Runs are immutable snapshots generated when a pay period is locked. Use exports for audit-grade records.
+            </div>
+          </div>
+          <div className="payRunSummaryGrid">
+            <div className="payRunSummaryCard">
+              <div className="payRunSummaryLabel">Last refreshed</div>
+              <div className="payRunSummaryValue">{loadedAt ? new Date(loadedAt).toLocaleString() : "—"}</div>
+            </div>
+            <div className="payRunSummaryCard">
+              <div className="payRunSummaryLabel">Data scope</div>
+              <div className="payRunSummaryValue">Org-wide (admin)</div>
+            </div>
+            <div className="payRunSummaryCard">
+              <div className="payRunSummaryLabel">Exports</div>
+              <div className="payRunSummaryValue">Summary + Detail CSV</div>
+            </div>
+            <div className="payRunSummaryCard">
+              <div className="payRunSummaryLabel">Status model</div>
+              <div className="payRunSummaryValue">Locked → Paid</div>
+            </div>
+          </div>
+        </div>
 
         <CommandCard
           title="Payroll runs"

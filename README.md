@@ -204,3 +204,25 @@ Recommended deployment check:
 1. `npm install`
 2. `npm run build`
 3. verify `/login`, `/dashboard`, `/reports/payroll`, `/reports/payroll-runs`, and `/admin/exports`
+
+
+## 2026-03-07 UI / UX stabilization sprint
+
+Included in this replacement repo:
+- rebuilt the shell branding hierarchy so the product shows as **SETU TRACK** with **SETU GROUP** as the parent brand
+- replaced the oversized sidebar/header logo treatment with a compact icon + product identity block
+- removed deprecated mobile web app metadata that was generating browser console warnings
+- added dedicated approvals dashboard styling so submitted weeks render as real approval cards instead of raw dev tables
+- tightened payroll report narrative panels and payroll runs trust/audit summary presentation
+- improved people directory toolbar styling and filter consistency
+- retained the prior runtime fix for the admin dashboard payroll summary API path
+
+Recommended verification after deploy:
+1. `/dashboard`
+2. `/timesheet`
+3. `/approvals`
+4. `/projects`
+5. `/profiles`
+6. `/reports/payroll`
+7. `/reports/payroll-runs`
+8. `/admin/org-settings`

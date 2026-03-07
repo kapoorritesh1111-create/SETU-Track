@@ -373,17 +373,17 @@ export default function PayrollReportPage() {
             </div>
 
             <div className="setuInsightGrid">
-              <div className="setuHeroCard">
+              <div className="setuHeroCard setuNarrativeCard">
                 <div className="setuSectionEyebrow">Current reporting scope</div>
                 <h2>One payroll workspace for finance summary, contractor summary, and row-level action control.</h2>
                 <p>
-                  Filters now support current week, last week, current month, last month, and custom range. Project and contractor summaries respect the current access scope and include any worker with qualifying time entries — including admin and manager users when they logged time.
+                  Filters support current week, last week, current month, last month, and custom range. Project and contractor summaries stay aligned to the active access scope, while export and payment signals remain visible in the same view.
                 </p>
-                <div className="setuScopeStats">
-                  <div><strong>{payload.kpis.visible_projects}</strong><span>Visible projects</span></div>
-                  <div><strong>{payload.kpis.periods_in_view}</strong><span>Periods in view</span></div>
-                  <div><strong>{payload.kpis.exports_linked}</strong><span>Exports linked</span></div>
-                  <div><strong>{payload.kpis.paid_rows}</strong><span>Paid rows</span></div>
+                <div className="setuNarrativeStats">
+                  <span className="pill">{payload.kpis.visible_projects} visible projects</span>
+                  <span className="pill">{payload.kpis.periods_in_view} periods in view</span>
+                  <span className="pill">{payload.kpis.exports_linked} exports linked</span>
+                  <span className="pill">{payload.kpis.paid_rows} paid rows</span>
                 </div>
               </div>
 

@@ -27,3 +27,31 @@ The API route for admin summary was selecting `hours` from `time_entries`, while
 1. Run a clean local/Vercel validation pass with environment variables present so TypeScript, lint, and route execution can be verified end to end.
 2. Continue the same SaaS polish pass on Projects, People, Approvals, and Admin surfaces so all command bars use the same visual system.
 3. Add a dedicated shell QA checklist for desktop/mobile, drawer interactions, and payroll/export flows before the next baseline freeze.
+
+
+## Additional UI / UX correction pass
+
+### Issues observed from screenshots
+- Sidebar brand block was visually oversized and felt disconnected from the product shell.
+- Approvals groups were rendering as plain text stacks with weak hierarchy.
+- Payroll report insight content was too verbose and visually heavy.
+- Payroll runs trust/audit section rendered as a long raw text block.
+- People toolbar controls lacked consistent shell-level styling.
+- Deprecated mobile web app metadata was still surfacing browser warnings.
+
+### Fixes applied in this pass
+- Reworked `AppShell` brand treatment to a compact SETU GROUP / SETU TRACK hierarchy using the knot icon and product text instead of the oversized raster lockup.
+- Added dedicated approvals page styles for cards, totals, action clusters, daily mini summaries, and detail rows.
+- Refined payroll report narrative content into a tighter SaaS summary card.
+- Refactored payroll runs trust/audit information into structured metric cards.
+- Added people toolbar search/filter styling so controls align with the rest of the SETU shell.
+- Simplified root metadata to remove deprecated mobile-web-app-capable behavior.
+
+### Files updated in this pass
+- `src/components/layout/AppShell.tsx`
+- `src/app/layout.tsx`
+- `src/app/globals.css`
+- `src/app/approvals/page.tsx`
+- `src/app/reports/payroll/page.tsx`
+- `src/app/reports/payroll-runs/page.tsx`
+- `README.md`
