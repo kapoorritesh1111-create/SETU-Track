@@ -34,9 +34,21 @@ type GroupKey = string;
 type Group = {
   key: GroupKey;
   user_id: string;
+  contractor_name: string;
   week_start: string; // YYYY-MM-DD
   week_end: string;   // YYYY-MM-DD
   entries: EntryRow[];
+  project_count?: number;
+  day_count?: number;
+  total_hours?: number;
+  anomalies?: string[];
+  notes_history?: Array<{ at: string; actor_name: string | null; note: string | null; action: string }>;
+};
+
+type QueuePayload = {
+  ok: true;
+  groups: Group[];
+  totals: { groups: number; entries: number; hours: number; flagged_groups: number };
 };
 
 // Use unified StatusChip instead of page-local pills.
@@ -96,7 +108,8 @@ function ApprovalsInner() {
   const [search, setSearch] = useState("");
 
   const [loading, setLoading] = useState(false);
-  const [entries, setEntries] = useState<EntryRow[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [queueTotals, setQueueTotals] = useState<{ groups: number; entries: number; hours: number; flagged_groups: number }>({ groups: 0, entries: 0, hours: 0, flagged_groups: 0 });
   const [profiles, setProfiles] = useState<Record<string, ProfileRow>>({});
   const [projects, setProjects] = useState<Record<string, ProjectRow>>({});
   const [msg, setMsg] = useState("");
@@ -119,100 +132,33 @@ function ApprovalsInner() {
       setMsg("");
 
       try {
-        // 1) Profiles lookup
-        let profRows: any[] = [];
-        if (isAdmin) {
-          const { data, error } = await supabase
-            .from("profiles")
-            .select("id, full_name, role, manager_id")
-            .eq("org_id", profile.org_id);
+        const params = new URLSearchParams();
+        params.set("all_pending", showAllPending ? "1" : "0");
+        params.set("week_start", weekStartISO);
+        params.set("week_end", weekEndISO);
+        if (search.trim()) params.set("q", search.trim());
 
-          if (error) throw error;
-          profRows = (data ?? []) as any[];
-        } else {
-          const { data, error } = await supabase
-            .from("profiles")
-            .select("id, full_name, role, manager_id")
-            .eq("org_id", profile.org_id)
-            .eq("manager_id", userId);
-
-          if (error) throw error;
-          profRows = (data ?? []) as any[];
-        }
-
-        const profMap: Record<string, ProfileRow> = {};
-        for (const r of profRows) profMap[r.id] = r;
-
-        // 2) Projects lookup (org scoped)
-        const { data: projRows, error: projErr } = await supabase
-          .from("projects")
-          .select("id, name")
-          .eq("org_id", profile.org_id);
-
-        if (projErr) throw projErr;
-
-        const projMap: Record<string, ProjectRow> = {};
-        for (const p of (projRows ?? []) as any[]) projMap[p.id] = p;
-
-        // 3) Build allowed user list for managers (direct reports)
-        const allowedUserIds = !isAdmin ? Object.keys(profMap) : [];
-
-        // 4) Entries query
-        // - "This week": submitted entries for focused week
-        // - "All pending": submitted entries for last 8 weeks (56d) and group by week on the client
-        const fromISO = showAllPending ? toISODate(addDays(new Date(), -56)) : weekStartISO;
-        const toISO = showAllPending ? toISODate(addDays(new Date(), 1)) : weekEndISO; // inclusive-ish
-
-        let q = supabase
-          .from("v_time_entries")
-          .select("id, user_id, entry_date, project_id, notes, status, hours_worked, full_name, project_name")
-          .eq("org_id", profile.org_id)
-          .eq("status", "submitted")
-          .gte("entry_date", fromISO)
-          .lte("entry_date", toISO)
-          .order("user_id", { ascending: true })
-          .order("entry_date", { ascending: true });
-
-        // Manager scoping at query time
-        if (!isAdmin) {
-          if (allowedUserIds.length === 0) {
-            if (!cancelled) {
-              setProfiles(profMap);
-              setProjects(projMap);
-              setEntries([]);
-              setLoading(false);
-            }
-            return;
-          }
-          q = q.in("user_id", allowedUserIds);
-        }
-
-        const { data: ent, error: entErr } = await q;
-        if (entErr) throw entErr;
-
-        if (!cancelled) {
-          setProfiles(profMap);
-          setProjects(projMap);
-          setEntries((((ent as any) ?? []) as EntryRow[]) || []);
-          setLoading(false);
-        }
+        const payload = await apiJson<QueuePayload>(`/api/approvals/queue?${params.toString()}`);
+        if (cancelled) return;
+        setGroups(payload.groups || []);
+        setQueueTotals(payload.totals || { groups: 0, entries: 0, hours: 0, flagged_groups: 0 });
       } catch (e: any) {
         if (!cancelled) {
           setMsg(e?.message || "Failed to load approvals.");
-          setEntries([]);
-          setLoading(false);
+          setGroups([]);
         }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     })();
 
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, profile, isAdmin, isManagerOrAdmin, weekStartISO, weekEndISO, showAllPending]);
+  }, [userId, profile, isManagerOrAdmin, weekStartISO, weekEndISO, showAllPending, search]);
 
   function displayName(uid: string, sample?: EntryRow) {
-    return sample?.full_name || profiles[uid]?.full_name || uid.slice(0, 8);
+    return sample?.full_name || (sample as any)?.contractor_name || profiles[uid]?.full_name || uid.slice(0, 8);
   }
 
   function projectLabel(project_id: string, sample?: EntryRow) {
@@ -238,26 +184,19 @@ function ApprovalsInner() {
       return;
     }
     if (!confirm(`Approve ${displayName(g.user_id, g.entries[0])} for week ${g.week_start} → ${g.week_end}?`)) return;
+    const note = window.prompt("Approval note (optional)", "") ?? "";
 
     setBusyKey(g.key);
     setMsg("");
 
     try {
-      const { error } = await supabase
-        .from("time_entries")
-        .update({ status: "approved" })
-        .eq("user_id", g.user_id)
-        .gte("entry_date", g.week_start)
-        .lte("entry_date", g.week_end)
-        .eq("status", "submitted");
+      await apiJson("/api/approvals/batch-approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: [{ user_id: g.user_id, week_start: g.week_start, week_end: g.week_end }], note }),
+      });
 
-      if (error) {
-        setMsg(error.message);
-        return;
-      }
-
-      // Remove from local queue
-      setEntries((prev) => prev.filter((x) => !(x.user_id === g.user_id && x.entry_date >= g.week_start && x.entry_date <= g.week_end)));
+      setGroups((prev) => prev.filter((x) => x.key !== g.key));
       setMsg("Approved ✅");
     } finally {
       setBusyKey("");
@@ -308,7 +247,7 @@ function ApprovalsInner() {
         return;
       }
 
-      setEntries((prev) => prev.filter((x) => !(x.user_id === g.user_id && x.entry_date >= g.week_start && x.entry_date <= g.week_end)));
+      setGroups((prev) => prev.filter((x) => x.key !== g.key));
       setMsg(`Rejected: ${name} ✅`);
       setRejecting(null);
       setRejectReason("");
@@ -317,58 +256,31 @@ function ApprovalsInner() {
     }
   }
 
-  const groups: Group[] = useMemo(() => {
-    // Optional search filter (by user name or id)
-    const s = normalize(search);
-
-    const filtered = s
-      ? entries.filter((e) => {
-          const name = normalize(e.full_name || profiles[e.user_id]?.full_name || "");
-          return name.includes(s) || normalize(e.user_id).includes(s);
-        })
-      : entries;
-
-    const map = new Map<GroupKey, Group>();
-
-    for (const e of filtered) {
-      // Group week:
-      // - this week mode: fixed weekStartISO/weekEndISO
-      // - all pending: compute start-of-week from entry_date
-      const ws = showAllPending ? toISODate(startOfWeekSunday(parseISODate(e.entry_date))) : weekStartISO;
-      const we = showAllPending ? toISODate(addDays(startOfWeekSunday(parseISODate(e.entry_date)), 6)) : weekEndISO;
-
-      const key = `${e.user_id}|${ws}`;
-      if (!map.has(key)) map.set(key, { key, user_id: e.user_id, week_start: ws, week_end: we, entries: [] });
-      map.get(key)!.entries.push(e);
-    }
-
-    return Array.from(map.values())
-      .map((g) => ({ ...g, entries: g.entries.sort((a, b) => a.entry_date.localeCompare(b.entry_date)) }))
-      .sort((a, b) => (a.week_start === b.week_start ? a.user_id.localeCompare(b.user_id) : b.week_start.localeCompare(a.week_start)));
-  }, [entries, profiles, search, showAllPending, weekStartISO, weekEndISO]);
+  const visibleGroups = useMemo(() => groups, [groups]);
 
 const selectedEntryIds = useMemo(() => {
   const ids: string[] = [];
-  for (const g of groups) {
+  for (const g of visibleGroups) {
     if (selectedGroups[g.key]) {
       for (const e of g.entries) ids.push(e.id);
     }
   }
   return ids;
-}, [groups, selectedGroups]);
+}, [visibleGroups, selectedGroups]);
 
 async function approveSelected() {
   if (!selectedEntryIds.length) return;
   try {
     setBusyKey("batch");
     setMsg("");
+    const note = window.prompt("Approval note (optional)", "") ?? "";
     await apiJson("/api/approvals/batch-approve", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ entry_ids: selectedEntryIds }),
+      body: JSON.stringify({ entry_ids: selectedEntryIds, note }),
     });
     setSelectedGroups({});
-    setEntries((prev) => prev.filter((e) => !selectedEntryIds.includes(e.id)));
+    setGroups((prev) => prev.filter((group) => !selectedGroups[group.key]));
   } catch (e: any) {
     setMsg(e?.message || "Failed to approve selected");
   } finally {
@@ -380,7 +292,7 @@ async function approveSelected() {
 useEffect(() => {
   if (!profile || !userId) return;
   const uniqueRanges = Array.from(
-    new Set(groups.map((g) => `${g.week_start}__${g.week_end}`))
+    new Set(visibleGroups.map((g) => `${g.week_start}__${g.week_end}`))
   );
 
   if (uniqueRanges.length === 0) return;
@@ -407,7 +319,7 @@ useEffect(() => {
   return () => {
     cancelled = true;
   };
-}, [groups, profile, userId]);
+}, [visibleGroups, profile, userId]);
 
 
 
@@ -572,11 +484,18 @@ useEffect(() => {
         </div>
       ) : null}
 
+      <div className="apQueueSummary">
+        <div className="apQueueMetric"><span>Groups</span><strong>{queueTotals.groups}</strong></div>
+        <div className="apQueueMetric"><span>Entries</span><strong>{queueTotals.entries}</strong></div>
+        <div className="apQueueMetric"><span>Hours</span><strong>{queueTotals.hours.toFixed(2)}</strong></div>
+        <div className="apQueueMetric"><span>Flagged</span><strong>{queueTotals.flagged_groups}</strong></div>
+      </div>
+
       {loading ? (
         <div className="card cardPad" style={{ marginTop: 14 }}>
           <div className="muted">Loading approvals…</div>
         </div>
-      ) : groups.length === 0 ? (
+      ) : visibleGroups.length === 0 ? (
         <div className="card cardPad" style={{ marginTop: 14 }}>
           <div style={{ fontWeight: 950 }}>Nothing to approve</div>
           <div className="muted" style={{ marginTop: 6 }}>
@@ -585,7 +504,7 @@ useEffect(() => {
         </div>
       ) : (
         <div className="apGroups">
-          {groups.map((g) => {
+          {visibleGroups.map((g) => {
             const sample = g.entries[0];
             const rangeKey = `${g.week_start}__${g.week_end}`;
             const isLocked = !!lockByRange[rangeKey]?.locked;
@@ -613,6 +532,24 @@ useEffect(() => {
                         </div>
                       ))}
                     </div>
+
+                    <div className="apMetaRow">
+                      <span className="badge">{g.project_count || new Set(g.entries.map((entry) => entry.project_id)).size} projects</span>
+                      <span className="badge">{g.day_count || days.length} days</span>
+                      {(g.anomalies || []).map((flag) => (
+                        <span key={flag} className="badge badgeWarn">{flag.replace(/_/g, " ")}</span>
+                      ))}
+                    </div>
+                    {g.notes_history?.length ? (
+                      <div className="apHistory">
+                        {g.notes_history.slice(0, 2).map((item) => (
+                          <div key={`${item.at}-${item.action}`} className="apHistoryItem">
+                            <strong>{item.action}</strong> · {item.actor_name || "System"} · {new Date(item.at).toLocaleString()}
+                            {item.note ? <span> — {item.note}</span> : null}
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="apGroupRight">

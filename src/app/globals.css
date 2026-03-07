@@ -874,3 +874,56 @@ textarea.nativeControl {
 .payRunSummaryValue { margin-top: 6px; font-weight: 900; color: var(--setu-indigo-900); }
 @media (max-width: 900px) { .payRunSummaryGrid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 640px) { .payRunSummaryGrid { grid-template-columns: 1fr; } }
+
+.apQueueSummary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+.apQueueMetric {
+  border: 1px solid var(--setu-border);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(245,247,255,.96));
+  padding: 14px 16px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+.apQueueMetric span {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--setu-muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.apQueueMetric strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 24px;
+  font-weight: 950;
+  color: var(--setu-indigo-900);
+}
+.apMetaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.apHistory {
+  margin-top: 10px;
+  display: grid;
+  gap: 6px;
+}
+.apHistoryItem {
+  font-size: 12px;
+  color: var(--setu-muted);
+  background: rgba(79, 70, 229, 0.05);
+  border: 1px solid rgba(79, 70, 229, 0.1);
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+.badgeWarn {
+  background: rgba(245, 158, 11, 0.12);
+  color: #92400e;
+  border: 1px solid rgba(245, 158, 11, 0.24);
+}

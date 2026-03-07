@@ -1,4 +1,4 @@
-# SETU TRACK (by SETU GROUPS)
+# SETU TRACK — CURRENT BASELINE
 
 **Brand system active:** SETU_Rebuilt_Startup_Brand_System  
 **Primary UI reference:** SETU_TRACK_SaaS_Interface_Blueprint_Pack
@@ -39,8 +39,8 @@ Primary objectives:
 **See /docs/PRODUCT_GOALS.md for the full product charter.**
 
 Key docs:
-- `docs/PRODUCT_GOALS.md` — product charter + next phases
-- `docs/DEEL_UX_GAPS.md` — what still feels below Deel-level UX
+- `docs/SETU_TRACK_PRODUCT_ARCHITECTURE.md` — current architecture + baseline definition
+- `docs/SETU_TRACK_EXECUTION_ROADMAP.md` — current execution roadmap from this baseline
 - `docs/RELEASE_CHECKLIST.md` — what’s completed + what to verify before release
 - `docs/UI_STRATEGY.md` — UI rules + component hierarchy
 

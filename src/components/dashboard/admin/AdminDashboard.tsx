@@ -69,6 +69,7 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
   const [previewBusy, setPreviewBusy] = useState(false);
   const [blockers, setBlockers] = useState<any[] | null>(null);
   const [blockerTotals, setBlockerTotals] = useState<{ entries: number; hours: number; amount: number } | null>(null);
+  const [closeChecklist, setCloseChecklist] = useState<Array<{ key: string; label: string; status: "pass" | "warn"; count: number; detail?: string }>>([]);
   const [periodLocked, setPeriodLocked] = useState(false);
   const [lockedAt, setLockedAt] = useState<string | null>(null);
   const [closing, setClosing] = useState(false);
@@ -245,14 +246,16 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
     try {
       setPreviewBusy(true);
       setMsg("");
-      const res = await apiJson<{ ok: true; blocked: boolean; totals: any; rows: any[] }>("/api/pay-period/preview", {
+      const res = await apiJson<{ ok: true; blocked: boolean; items: any[]; blockers: any[] }>("/api/pay-period/checklist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ period_start: startDate, period_end: endDate }),
       });
-      setBlockers(res.rows || []);
-      setBlockerTotals(res.totals || null);
-      setMsg((res.rows || []).length === 0 ? "Ready to close. No blockers found." : `Blocked: ${(res.totals?.entries ?? 0)} entries need approval before closing.`);
+      setCloseChecklist(res.items || []);
+      setBlockers(res.blockers || []);
+      const totals = (res.blockers || []).reduce((acc: any, row: any) => ({ entries: acc.entries + Number(row.entries_count || 0), hours: acc.hours + Number(row.hours || 0), amount: acc.amount + Number(row.amount || 0) }), { entries: 0, hours: 0, amount: 0 });
+      setBlockerTotals(totals);
+      setMsg((res.items || []).some((item: any) => item.status === "warn") ? "Payroll close is blocked. Review checklist items below." : "Ready to close. No blockers found.");
     } catch (e: any) {
       setMsg(e?.message || "Failed to preview close");
     } finally {
