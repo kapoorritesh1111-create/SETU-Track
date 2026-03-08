@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "../../../components/layout/AppShell";
 import Button from "../../../components/ui/Button";
@@ -160,7 +160,7 @@ function MetricCard({ label, value, hint }: { label: string; value: string; hint
   );
 }
 
-export default function PayrollReportPage() {
+function PayrollReportPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialPreset = coercePreset(searchParams.get("preset"), "last_month");
@@ -657,5 +657,14 @@ export default function PayrollReportPage() {
 
       <ExportReceiptDrawer open={receiptOpen} onClose={() => setReceiptOpen(false)} receipt={selectedReceipt as any} />
     </AppShell>
+  );
+}
+
+
+export default function PayrollReportPage() {
+  return (
+    <Suspense fallback={<AppShell title="Payroll Report" subtitle="Connect grow track — payroll intelligence across projects, contractors, and registers"><div className="card cardPad"><div className="muted">Loading payroll report…</div></div></AppShell>}>
+      <PayrollReportPageContent />
+    </Suspense>
   );
 }

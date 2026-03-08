@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import RequireOnboarding from "../../components/auth/RequireOnboarding";
 import AppShell from "../../components/layout/AppShell";
@@ -37,7 +37,7 @@ type PayrollRun = {
 function money(value: number) { return `USD ${value.toFixed(2)}`; }
 function pct(delta: number) { return `${delta > 0 ? "+" : ""}${delta.toFixed(1)}%`; }
 
-export default function AnalyticsPage() {
+function AnalyticsPageContent() {
   const searchParams = useSearchParams();
   const { profile, userId, loading } = useProfile() as any;
   const [preset, setPreset] = useState<DatePreset>((searchParams.get("preset") as DatePreset) || "current_month");
@@ -255,5 +255,14 @@ export default function AnalyticsPage() {
         </div>
       </AppShell>
     </RequireOnboarding>
+  );
+}
+
+
+export default function AnalyticsPage() {
+  return (
+    <Suspense fallback={<RequireOnboarding><AppShell title="Analytics" subtitle="Connect grow track — labor, payroll, and project performance insights"><div className="card cardPad"><div className="muted">Loading analytics…</div></div></AppShell></RequireOnboarding>}>
+      <AnalyticsPageContent />
+    </Suspense>
   );
 }
