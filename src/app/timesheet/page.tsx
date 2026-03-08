@@ -265,19 +265,12 @@ function SetuTrackInner() {
   }
 
   async function copyLastWeekToCurrent() {
-    if (!isCurrentWeek) {
-      setMsg('Open the current week to copy last week into it.');
-      return;
-    }
-    if (rows.length) {
-      setMsg('Current week must be empty before copying last week.');
-      return;
-    }
+    if (!isCurrentWeek) return setMsg('Open the current week to copy last week into it.');
+    if (rows.length) return setMsg('Current week must be empty before copying last week.');
     const lastWeekStart = addDays(weekStart, -7);
     const lastStartISO = toISODate(lastWeekStart);
     const lastEndISO = toISODate(addDays(lastWeekStart, 6));
     setBusy(true);
-
     try {
       const { data, error } = await supabase
         .from('time_entries')
@@ -293,35 +286,22 @@ function SetuTrackInner() {
       }
 
       const copied = ((data || []) as any[]).map((r) => {
-        const offset = Math.max(
-          0,
-          Math.round(
-            (new Date(r.entry_date + 'T00:00:00').getTime() -
-              new Date(lastStartISO + 'T00:00:00').getTime()) /
-              86400000,
-          ),
-        );
-        return cloneRowForDate(
-          {
-            tempId: '',
-            entry_date: r.entry_date,
-            project_id: r.project_id,
-            time_in: timeToHHMM(r.time_in),
-            time_out: timeToHHMM(r.time_out),
-            lunch_hours: Number(r.lunch_hours || 0),
-            mileage: Number(r.mileage || 0),
-            notes: r.notes || '',
-            status: 'draft',
-          },
-          toISODate(addDays(weekStart, offset)),
-        );
+        const offset = Math.max(0, Math.round((new Date(r.entry_date + 'T00:00:00').getTime() - new Date(lastStartISO + 'T00:00:00').getTime()) / 86400000));
+        return cloneRowForDate({
+          tempId: '',
+          entry_date: r.entry_date,
+          project_id: r.project_id,
+          time_in: timeToHHMM(r.time_in),
+          time_out: timeToHHMM(r.time_out),
+          lunch_hours: Number(r.lunch_hours || 0),
+          mileage: Number(r.mileage || 0),
+          notes: r.notes || '',
+          status: 'draft',
+        }, toISODate(addDays(weekStart, offset)));
       });
 
       if (!copied.length) setMsg('No entries found in last week.');
-      else {
-        setRows(copied);
-        setMsg('Copied last week → current week.');
-      }
+      else { setRows(copied); setMsg('Copied last week → current week.'); }
     } finally {
       setBusy(false);
     }

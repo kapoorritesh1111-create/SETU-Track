@@ -20,6 +20,8 @@ type VRow = {
   hourly_rate_snapshot?: number | null;
   status: "draft" | "submitted" | "approved" | "rejected";
   entry_date: string;
+  project_id?: string | null;
+  notes?: string | null;
 };
 
 type AdminSummary = {
@@ -158,7 +160,7 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
             .order("full_name", { ascending: true }),
           supabase
             .from("v_time_entries")
-            .select("user_id,full_name,hours_worked,hourly_rate_snapshot,status,entry_date")
+            .select("user_id,full_name,hours_worked,hourly_rate_snapshot,status,entry_date,project_id,notes")
             .eq("org_id", orgId)
             .gte("entry_date", startDate)
             .lte("entry_date", endDate),
@@ -443,7 +445,7 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
           <SectionHeader title="Recent activity" subtitle="Who changed what in the active reporting window" />
           <div className="dbActivityList">
             {rows.slice().sort((a,b)=>a.entry_date < b.entry_date ? 1 : -1).slice(0,6).map((row)=> (
-              <div key={row.tempId} className="dbActivityItem">
+              <div key={`${row.user_id}-${row.entry_date}-${row.project_id || "none"}`} className="dbActivityItem">
                 <div>
                   <div style={{ fontWeight: 800 }}>{row.entry_date}</div>
                   <div className="muted" style={{ fontSize: 12 }}>{row.notes || 'Timesheet activity'} • {row.project_id || 'Unassigned project'}</div>
