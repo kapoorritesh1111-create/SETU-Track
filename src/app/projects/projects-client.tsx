@@ -623,35 +623,14 @@ function closeCreate() {
   }
 
   function onProjectRowClick(projectId: string) {
+    // ✅ “Select” is now clicking the row
     setProjectInUrl(projectId);
+
+    // ✅ Admin: open drawer on click
     if (isAdmin) openDrawer(projectId);
   }
 
-  const subtitle = manageUser
-    ? `Managing project access for ${manageUser.full_name || manageUser.id}`
-    : isAdmin
-      ? "Admin view (org projects)"
-      : isManagerOrAdmin
-        ? "Manager view (org projects)"
-        : "Your assigned projects";
-
-  const stripItems = useMemo(() => {
-    const mondayCount = projects.filter((project) => (project.week_start || "sunday") === "monday").length;
-    const assignedCount = manageUserId
-      ? filteredProjects.filter((project) => assignedProjectIds.has(project.id)).length
-      : filteredProjects.length;
-    return [
-      { label: "Active projects", value: String(counts.active), hint: `${counts.total} visible in org scope` },
-      { label: "Inactive", value: String(counts.inactive), hint: "Archived or paused workspaces" },
-      {
-        label: manageUserId ? "Assigned to user" : "Filtered view",
-        value: String(assignedCount),
-        hint: manageUserId ? "Current access granted" : "Projects in current filter",
-      },
-      { label: "Week start Monday", value: String(mondayCount), hint: "Delivery configuration coverage" },
-    ];
-  }, [projects, filteredProjects, counts, manageUserId, assignedProjectIds]);
-
+  // ---- AppShell early returns (must include children!) ----
   if (loading) {
     return (
       <AppShell title="Projects" subtitle="Loading…">
@@ -676,6 +655,26 @@ function closeCreate() {
       </AppShell>
     );
   }
+
+  const subtitle = manageUser
+    ? `Managing project access for ${manageUser.full_name || manageUser.id}`
+    : isAdmin
+      ? "Admin view (org projects)"
+      : isManagerOrAdmin
+        ? "Manager view (org projects)"
+        : "Your assigned projects";
+
+
+  const stripItems = useMemo(() => {
+    const mondayCount = projects.filter((project) => (project.week_start || "sunday") === "monday").length;
+    const assignedCount = manageUserId ? filteredProjects.filter((project) => assignedProjectIds.has(project.id)).length : filteredProjects.length;
+    return [
+      { label: "Active projects", value: String(counts.active), hint: `${counts.total} visible in org scope` },
+      { label: "Inactive", value: String(counts.inactive), hint: "Archived or paused workspaces" },
+      { label: manageUserId ? "Assigned to user" : "Filtered view", value: String(assignedCount), hint: manageUserId ? "Current access granted" : "Projects in current filter" },
+      { label: "Week start Monday", value: String(mondayCount), hint: "Delivery configuration coverage" },
+    ];
+  }, [projects, filteredProjects, counts, manageUserId, assignedProjectIds]);
 
   const headerRight = (
     <div className="prHeaderRight">

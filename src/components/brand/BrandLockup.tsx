@@ -1,44 +1,24 @@
-import { BRAND } from '../../config/brand';
+import { BRAND } from "../../config/brand";
 
 type Props = {
+  compact?: boolean;
   className?: string;
-  logoClassName?: string;
-  taglineClassName?: string;
-  descriptionClassName?: string;
-  stacked?: boolean;
+  showTagline?: boolean;
   showDescription?: boolean;
-  href?: string;
-  priority?: boolean;
+  invert?: boolean;
+  iconOnly?: boolean;
 };
 
-export default function BrandLockup({
-  className = '',
-  logoClassName = '',
-  taglineClassName = '',
-  descriptionClassName = '',
-  stacked = true,
-  showDescription = false,
-  priority = false,
-}: Props) {
+export default function BrandLockup({ compact=false, className="", showTagline=true, showDescription=false, invert=false, iconOnly=false }: Props) {
   return (
-    <div className={`setuBrandLockup ${stacked ? 'setuBrandLockupStacked' : ''} ${className}`.trim()}>
-      <picture>
-        <source srcSet={BRAND.logo.full} type="image/svg+xml" />
-        <img
-          className={`setuBrandLogo ${logoClassName}`.trim()}
-          src={BRAND.logo.fullPng}
-          alt={`${BRAND.name} logo`}
-          loading={priority ? 'eager' : 'lazy'}
-          decoding="async"
-          draggable={false}
-        />
-      </picture>
-      <div className="setuBrandCopy">
-        <p className={`setuBrandTagline ${taglineClassName}`.trim()}>{BRAND.tagline}</p>
-        {showDescription ? (
-          <p className={`setuBrandDescription ${descriptionClassName}`.trim()}>{BRAND.description}</p>
-        ) : null}
-      </div>
+    <div className={["brandLockup", compact ? "brandLockupCompact" : "", invert ? "brandLockupInvert" : "", className].filter(Boolean).join(" ")}>
+      <img className={iconOnly ? "brandMark brandMarkOnly" : compact ? "brandMark" : "brandLogo"} src={iconOnly ? BRAND.logo.mark : BRAND.logo.full} alt={iconOnly ? `${BRAND.name} symbol` : `${BRAND.name} logo`} />
+      {!iconOnly ? (
+        <div className="brandLockupCopy">
+          {showTagline ? <div className="brandTagline">{BRAND.tagline}</div> : null}
+          {showDescription ? <div className="brandDescription">{BRAND.description}</div> : null}
+        </div>
+      ) : null}
     </div>
   );
 }

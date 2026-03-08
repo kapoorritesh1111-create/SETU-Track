@@ -6,10 +6,11 @@ import { supabase } from "../../../lib/supabaseBrowser";
 import { apiJson } from "../../../lib/api/client";
 import { presetToRange } from "../../../lib/dateRanges";
 import { CardPad } from "../../ui/Card";
+import { StatCard } from "../../ui/StatCard";
 import { SectionHeader } from "../../ui/SectionHeader";
 import { EmptyState } from "../../ui/EmptyState";
+import { MetricsRow } from "../../ui/MetricsRow";
 import { StatusChip } from "../../ui/StatusChip";
-import WorkspaceKpiStrip from "../../setu/WorkspaceKpiStrip";
 
 type Contractor = { id: string; full_name: string | null; hourly_rate: number | null };
 type VRow = {
@@ -87,18 +88,13 @@ function riskState(risk: string): "approved" | "open" | "submitted" | "rejected"
   return "draft";
 }
 
-function riskLabel(risk: string) {
-  if (risk === "healthy") return "Healthy";
-  if (risk === "watch") return "Watch";
-  if (risk === "high") return "At risk";
-  if (risk === "over") return "Over budget";
-  return "Untracked";
-}
-
 export default function AdminDashboard({ orgId }: { orgId: string; userId: string }) {
   const router = useRouter();
-  const [preset, setPreset] = useState<"current_month" | "last_month">("current_month");
-  const range = useMemo(() => presetToRange(preset, "sunday"), [preset]);
+  const [preset, setPreset] = useState<"today" | "current_week" | "current_month">("current_week");
+  const range = useMemo(() => {
+    if (preset === "today") { const now = new Date(); const iso = now.toISOString().slice(0,10); return { start: iso, end: iso }; }
+    return presetToRange(preset, "sunday");
+  }, [preset]);
   const currentMonthRange = useMemo(() => presetToRange("current_month", "sunday"), []);
   const previousMonthRange = useMemo(() => presetToRange("last_month", "sunday"), []);
   const [startDate, setStartDate] = useState(range.start);
@@ -114,6 +110,7 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [previewBusy, setPreviewBusy] = useState(false);
+  const [blockers, setBlockers] = useState<any[] | null>(null);
   const [blockerTotals, setBlockerTotals] = useState<{ entries: number; hours: number; amount: number } | null>(null);
   const [closeChecklist, setCloseChecklist] = useState<Array<{ key: string; label: string; status: "pass" | "warn"; count: number; detail?: string }>>([]);
   const [periodLocked, setPeriodLocked] = useState(false);
@@ -166,9 +163,11 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
             .gte("entry_date", startDate)
             .lte("entry_date", endDate),
         ]);
+
         if (cancelled) return;
         if (consErr) throw consErr;
         if (rErr) throw rErr;
+
         setContractors(((cons as any) ?? []) as Contractor[]);
         setRows(((r as any) ?? []) as VRow[]);
       } catch (e: any) {
@@ -177,6 +176,7 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
         if (!cancelled) setBusy(false);
       }
     })();
+
     return () => {
       cancelled = true;
     };
@@ -220,11 +220,10 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
     };
   }, [startDate, endDate, currentMonthRange.start, currentMonthRange.end, previousMonthRange.start, previousMonthRange.end]);
 
-  const { approvedHours, approvedPay, pendingCount, submittedHours } = useMemo(() => {
+  const { approvedHours, approvedPay, pendingCount } = useMemo(() => {
     let ah = 0;
     let ap = 0;
     let pc = 0;
-    let sh = 0;
     for (const r of rows) {
       const h = Number(r.hours_worked ?? 0);
       const rate = Number(r.hourly_rate_snapshot ?? 0);
@@ -232,12 +231,9 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
         ah += h;
         ap += h * rate;
       }
-      if (r.status === "submitted") {
-        pc += 1;
-        sh += h;
-      }
+      if (r.status === "submitted") pc += 1;
     }
-    return { approvedHours: ah, approvedPay: ap, pendingCount: pc, submittedHours: sh };
+    return { approvedHours: ah, approvedPay: ap, pendingCount: pc };
   }, [rows]);
 
   const contractorCards = useMemo(() => {
@@ -264,15 +260,13 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
       }
       if (r.status === "submitted") item.status = "Pending";
     }
-    return Array.from(map.values()).sort((a, b) => b.pay - a.pay).slice(0, 6);
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [contractors, rows]);
 
   const currentPayroll = Number(currentMonthSummary?.total_amount ?? 0);
   const previousPayroll = Number(previousMonthSummary?.total_amount ?? 0);
   const payrollDeltaPct = pctChange(currentPayroll, previousPayroll);
   const currency = summary?.currency || currentMonthSummary?.currency || "USD";
-  const readinessState = periodLocked ? "approved" : pendingCount ? "submitted" : "open";
-  const readinessLabel = periodLocked ? "Locked" : pendingCount ? "Needs review" : "Ready";
 
   async function previewClose() {
     setPreviewBusy(true);
@@ -283,6 +277,7 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ period_start: startDate, period_end: endDate }),
       });
+      setBlockers(json.blockers || []);
       setBlockerTotals(json.totals || null);
       setCloseChecklist(json.checklist?.items || []);
     } catch (e: any) {
@@ -314,155 +309,81 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
   }
 
   return (
-    <section className="setuReportPage setuPageNarrow">
+    <div style={{ display: "grid", gap: 14 }}>
       {msg ? (
         <div className="alert alertInfo">
           <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>{msg}</pre>
         </div>
       ) : null}
 
-      <div className="setuHeroCard dashboardHeroCard dashboardHeroCardCompact">
-        <div className="analyticsHeroCopy">
-          <div className="setuSectionEyebrow">Admin command center</div>
-          <h2>See readiness, payroll cost, and project risk before closing the period.</h2>
-          <p>
-            The dashboard is intentionally lighter: top controls first, current exceptions second, and budget or profile risk pushed into supporting panels.
-          </p>
-        </div>
-        <div className="dashboardHeroControls">
-          <label className="setuField" style={{ minWidth: 180 }}>
-            <span>Reporting period</span>
-            <select className="input" value={preset} onChange={(e) => setPreset(e.target.value as any)}>
-              <option value="current_month">Current month</option>
-              <option value="last_month">Last month</option>
-            </select>
-          </label>
-          <div className="setuHeroActions">
-            <button className="btn btnSecondary btnMd" onClick={previewClose} disabled={previewBusy}>{previewBusy ? "Checking…" : "Preview close"}</button>
-            <button className="btn btnPrimary btnMd" onClick={closePayroll} disabled={closing || periodLocked}>{periodLocked ? "Locked" : closing ? "Locking…" : "Lock payroll"}</button>
+      <CardPad className="dbControlBar">
+        <div className="dbControlBarHead">
+          <div>
+            <div className="label">Global dashboard period</div>
+            <div className="dbControlTitle">Drive KPIs, readiness, and activity from one reporting window.</div>
           </div>
-          <div className="dashboardScopeMeta">
-            <span className="pill">{startDate} → {endDate}</span>
-            <StatusChip state={readinessState} label={readinessLabel} />
-            {periodLocked && lockedAt ? <span className="pill ok">Locked {new Date(lockedAt).toLocaleDateString()}</span> : null}
+          <div className="dbPeriodActions">
+            <button className={`pill ${preset === "today" ? "ok" : ""}`} onClick={() => setPreset("today")}>Today</button>
+            <button className={`pill ${preset === "current_week" ? "ok" : ""}`} onClick={() => setPreset("current_week")}>This week</button>
+            <button className={`pill ${preset === "current_month" ? "ok" : ""}`} onClick={() => setPreset("current_month")}>This month</button>
           </div>
         </div>
-      </div>
-
-      <WorkspaceKpiStrip
-        items={[
-          { label: "Payroll in view", value: `${currency} ${money(Number(financials?.analytics.total_payroll || summary?.total_amount || 0))}`, hint: `${approvedHours.toFixed(2)} approved hrs` },
-          { label: "Pending approvals", value: String(pendingCount), hint: `${submittedHours.toFixed(2)} submitted hrs awaiting review` },
-          { label: "Month variance", value: `${payrollDeltaPct >= 0 ? "+" : ""}${payrollDeltaPct.toFixed(1)}%`, hint: `Compared with ${monthLabel(previousMonthRange.start)}` },
-          { label: "Budget alerts", value: String(financials?.analytics.budget_risk_alerts || 0), hint: `${financials?.analytics.incomplete_profiles || 0} profile blockers` },
-        ]}
-      />
-
-      <div className="setuContentGrid dashboardCommandGrid">
-        <CardPad className="setuWorkspaceCard">
-          <SectionHeader title="Operational focus" subtitle="Resolve blockers before finance closes the period." />
-          <div className="setuMiniStatGrid dashboardMiniStatGrid" style={{ marginTop: 14 }}>
-            <div className="setuMiniStat"><span>Approvals pending</span><strong>{pendingCount}</strong><small>Submitted entries in queue</small></div>
-            <div className="setuMiniStat"><span>Active contractors</span><strong>{summary?.active_contractors ?? contractors.length}</strong><small>Workers contributing in period</small></div>
-            <div className="setuMiniStat"><span>Missing profile data</span><strong>{financials?.analytics.incomplete_profiles || 0}</strong><small>Payroll-required fields missing</small></div>
-            <div className="setuMiniStat"><span>Export receipts</span><strong>{financials?.analytics.export_history_count || 0}</strong><small>Tracked payroll export history</small></div>
-          </div>
-
-          <div className="dashboardFocusGrid" style={{ marginTop: 16 }}>
-            <div className="dashboardQuickActions">
-              <button className="dbQuickBtn" onClick={() => router.push("/approvals")}>
-                <strong>Review approvals</strong>
-                <span className="muted">Move submitted time into approved payroll-ready state.</span>
-              </button>
-              <button className="dbQuickBtn" onClick={() => router.push("/reports/payroll")}>
-                <strong>Open payroll report</strong>
-                <span className="muted">Review projects, contractors, exports, and paid status.</span>
-              </button>
-              <button className="dbQuickBtn" onClick={() => router.push("/reports/payroll-runs")}>
-                <strong>Review payroll runs</strong>
-                <span className="muted">Audit closed periods, exports, and finance confirmation.</span>
-              </button>
-            </div>
-
-            <div className="dashboardChecklistPanel">
-              <div className="label">Close checklist</div>
-              {closeChecklist.length ? (
-                <div className="analyticsList analyticsListDense dashboardChecklistList">
-                  {closeChecklist.slice(0, 4).map((item) => (
-                    <div key={item.key} className="analyticsListItem">
-                      <div>
-                        <div className="analyticsListTitle">{item.label}</div>
-                        <div className="analyticsListMeta">{item.detail || "Preview check against payroll close requirements."}</div>
-                      </div>
-                      <StatusChip state={item.status === "pass" ? "approved" : "rejected"} label={`${item.count}`} />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="muted" style={{ marginTop: 10 }}>Run “Preview close” to check payroll blockers before locking the period.</div>
-              )}
-            </div>
-          </div>
-        </CardPad>
-
-        <div className="setuSideStack">
-          <CardPad className="setuWorkspaceCard">
-            <SectionHeader title="Financial picture" subtitle="Budget coverage, payroll totals, and current finance state." />
-            <div className="setuListRows" style={{ marginTop: 14 }}>
-              <div className="setuListRow"><div><strong>Approved payroll</strong><div className="muted">Entries approved and ready for lock</div></div><div className="setuListValue">{currency} {money(approvedPay)}</div></div>
-              <div className="setuListRow"><div><strong>Budget used</strong><div className="muted">Tracked project budget burn in view</div></div><div className="setuListValue">{currency} {money(Number(financials?.analytics.budget_used || 0))}</div></div>
-              <div className="setuListRow"><div><strong>Budget remaining</strong><div className="muted">Across tracked projects</div></div><div className="setuListValue">{currency} {money(Number(financials?.analytics.budget_remaining || 0))}</div></div>
-              <div className="setuListRow"><div><strong>Closed snapshot</strong><div className="muted">Current period payroll state</div></div><div className="setuListValue">{summary?.payroll_state || (periodLocked ? "locked" : "open")}</div></div>
-            </div>
-            {blockerTotals ? (
-              <div className="dashboardTotalsStrip">
-                <span className="pill">{blockerTotals.entries} blocking entries</span>
-                <span className="pill">{blockerTotals.hours.toFixed(2)} hours</span>
-                <span className="pill">{currency} {money(blockerTotals.amount)} impacted</span>
-              </div>
-            ) : null}
-          </CardPad>
-
-          <CardPad className="setuWorkspaceCard">
-            <SectionHeader title="Contractor readiness" subtitle="Highest payroll contributors and profile completeness." />
-            <div className="analyticsList analyticsListDense" style={{ marginTop: 14 }}>
-              {contractorCards.length ? contractorCards.map((item) => (
-                <div key={item.id} className="analyticsListItem">
-                  <div>
-                    <div className="analyticsListTitle">{item.name}</div>
-                    <div className="analyticsListMeta">{item.hours.toFixed(2)} hrs • Rate {currency} {money(item.rate)}</div>
-                  </div>
-                  <div className="analyticsRightStack">
-                    <strong>{currency} {money(item.pay)}</strong>
-                    <StatusChip state={item.status === "Ready" ? "approved" : "submitted"} label={item.status} />
-                  </div>
-                </div>
-              )) : <div className="muted">No contractor payroll in range yet.</div>}
-            </div>
-          </CardPad>
+        <div className="dbQueueGrid">
+          <div className="dbQueueItem"><span>Pending approvals</span><strong>{pendingCount}</strong></div>
+          <div className="dbQueueItem"><span>Profile blockers</span><strong>{financials?.analytics.incomplete_profiles || 0}</strong></div>
+          <div className="dbQueueItem"><span>Budget alerts</span><strong>{financials?.analytics.budget_risk_alerts || 0}</strong></div>
+          <div className="dbQueueItem"><span>Export ledger</span><strong>{financials?.analytics.export_history_count || 0}</strong></div>
         </div>
-      </div>
+      </CardPad>
 
-      <div className="setuContentGrid dashboardBottomGrid">
+      <MetricsRow>
+        <StatCard label="Approved hours" value={`${approvedHours.toFixed(2)} hrs`} hint={`${startDate} → ${endDate}`} />
+        <StatCard label="Approved payroll" value={`${currency} ${money(approvedPay)}`} hint={`${pendingCount} pending entries`} />
+        <StatCard label="Current month" value={`${currency} ${money(currentPayroll)}`} hint={`${monthLabel(currentMonthRange.start)}`} />
+        <StatCard label="vs last month" value={`${payrollDeltaPct >= 0 ? "+" : ""}${payrollDeltaPct.toFixed(1)}%`} hint={`${monthLabel(previousMonthRange.start)}`} />
+      </MetricsRow>
+
+      
+
+      <MetricsRow>
+        <StatCard label="Budget used" value={`${currency} ${money(Number(financials?.analytics.budget_used || 0))}`} hint={`${financials?.analytics.budget_risk_alerts || 0} project alerts`} />
+        <StatCard label="Budget remaining" value={`${currency} ${money(Number(financials?.analytics.budget_remaining || 0))}`} hint="Across tracked projects" />
+        <StatCard label="Incomplete profiles" value={`${financials?.analytics.incomplete_profiles || 0}`} hint="Payroll-required fields missing" />
+        <StatCard label="Export ledger" value={`${financials?.analytics.export_history_count || 0}`} hint="Tracked payroll exports" />
+      </MetricsRow>
+
+      <CardPad className="dbPayCard">
+        <div className="dbPayHeader">
+          <div>
+            <div className="dbPayTitle">Operational command</div>
+            <div className="muted">Use the selected dashboard period to review payroll readiness, risk, and next actions.</div>
+          </div>
+          <div className="dbPayValue">{currency} {money(Number(financials?.analytics.total_payroll || summary?.total_amount || 0))}</div>
+        </div>
+
+        <div className="dbQuickGrid" style={{ marginTop: 14 }}>
+          <button className="dbQuickBtn" onClick={() => router.push("/reports/payroll")}>Payroll analytics<span className="muted">Project and contractor breakdowns</span></button>
+          <button className="dbQuickBtn" onClick={() => router.push("/projects")}>Project budgets<span className="muted">Budget, billing, remaining</span></button>
+          <button className="dbQuickBtn" onClick={() => router.push("/reports/payroll-runs")}>Payroll runs<span className="muted">Financial register and audit trail</span></button>
+        </div>
+      </CardPad>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1.35fr 1fr", gap: 14 }}>
         <CardPad>
-          <SectionHeader title="Project budget watchlist" subtitle="Current payroll cost against tracked budgets." />
+          <SectionHeader title="Project budget watchlist" subtitle="Current payroll cost against tracked budgets" />
           {financials?.project_budgets?.length ? (
-            <div className="analyticsList analyticsListDense" style={{ marginTop: 14 }}>
-              {financials.project_budgets.slice(0, 6).map((row) => {
-                const pct = row.budget_amount > 0 ? Math.min(100, Math.round((row.payroll_cost / row.budget_amount) * 100)) : 0;
-                return (
-                  <div key={row.project_id} className="analyticsBudgetRow">
-                    <div className="analyticsBudgetTop">
-                      <div>
-                        <div className="analyticsListTitle">{row.project_name}</div>
-                        <div className="analyticsListMeta">Budget {row.currency} {money(row.budget_amount)} • Used {row.currency} {money(row.payroll_cost)} • Remaining {row.currency} {money(row.remaining_budget)}</div>
-                      </div>
-                      <StatusChip state={riskState(row.risk)} label={riskLabel(row.risk)} />
+            <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+              {financials.project_budgets.slice(0, 6).map((row) => (
+                <div key={row.project_id} className="row" style={{ justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontWeight: 800 }}>{row.project_name}</div>
+                    <div className="muted" style={{ fontSize: 12 }}>
+                      Budget {row.currency} {money(row.budget_amount)} • Used {row.currency} {money(row.payroll_cost)} • Remaining {row.currency} {money(row.remaining_budget)}
                     </div>
-                    <div className="analyticsTrendTrack"><div className="analyticsTrendFill" style={{ width: `${Math.max(6, pct)}%` }} /></div>
                   </div>
-                );
-              })}
+                  <StatusChip state={riskState(row.risk)} label={row.risk === "untracked" ? "Untracked" : row.risk} />
+                </div>
+              ))}
             </div>
           ) : (
             <EmptyState title="No tracked budgets yet" description="Add a budget and billing rate on the Projects page to activate budget intelligence." />
@@ -470,26 +391,103 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
         </CardPad>
 
         <CardPad>
-          <SectionHeader title="Profile readiness" subtitle="Payroll completeness score for active contractors." />
+          <SectionHeader title="Contractor profile readiness" subtitle="Payroll completeness score for active contractors" />
           {financials?.profile_completeness?.length ? (
-            <div className="analyticsList analyticsListDense" style={{ marginTop: 14 }}>
+            <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
               {financials.profile_completeness.slice(0, 6).map((row) => (
-                <div key={row.contractor_id} className="analyticsListItem">
+                <div key={row.contractor_id} className="row" style={{ justifyContent: "space-between", gap: 12 }}>
                   <div>
-                    <div className="analyticsListTitle">{row.contractor_name}</div>
-                    <div className="analyticsListMeta">{row.payroll_missing.length ? `Missing: ${row.payroll_missing.join(", ")}` : "Payroll-ready"}</div>
+                    <div style={{ fontWeight: 800 }}>{row.contractor_name}</div>
+                    <div className="muted" style={{ fontSize: 12 }}>{row.payroll_missing.length ? `Missing: ${row.payroll_missing.join(", ")}` : "Payroll-ready"}</div>
                   </div>
                   <StatusChip state={row.score === 100 ? "approved" : row.score >= 70 ? "submitted" : "rejected"} label={`${row.score}%`} />
                 </div>
               ))}
             </div>
           ) : (
-            <div className="muted" style={{ marginTop: 14 }}>No contractor profiles found.</div>
+            <div className="muted" style={{ marginTop: 12 }}>No contractor profiles found.</div>
           )}
         </CardPad>
       </div>
 
-      {busy ? <div className="card cardPad"><div className="muted">Loading dashboard data…</div></div> : null}
-    </section>
+      <CardPad>
+        <SectionHeader title="Period actions" subtitle="Close the selected period only after blockers are resolved" />
+        <div className="row" style={{ gap: 10, flexWrap: "wrap", marginTop: 12 }}>
+          <select className="select" value={preset} onChange={(e) => setPreset(e.target.value as any)}>
+            <option value="today">Today</option>
+            <option value="current_week">This week</option>
+            <option value="current_month">This month</option>
+          </select>
+          <button className="pill" onClick={previewClose} disabled={previewBusy}>{previewBusy ? "Checking…" : "Preview close"}</button>
+          <button className="btnPrimary" onClick={closePayroll} disabled={closing || periodLocked}>{periodLocked ? "Locked" : closing ? "Locking…" : "Lock payroll"}</button>
+          {periodLocked ? <StatusChip state="approved" label={lockedAt ? `Locked ${new Date(lockedAt).toLocaleString()}` : "Locked"} /> : null}
+        </div>
+
+        {closeChecklist.length ? (
+          <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
+            {closeChecklist.map((item) => (
+              <div key={item.key} className="row" style={{ justifyContent: "space-between", gap: 12 }}>
+                <div>
+                  <div style={{ fontWeight: 700 }}>{item.label}</div>
+                  <div className="muted" style={{ fontSize: 12 }}>{item.detail || ""}</div>
+                </div>
+                <StatusChip state={item.status === "pass" ? "approved" : "rejected"} label={`${item.count}`} />
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </CardPad>
+
+      <div className="grid2 dbActivitySplit">
+        <CardPad>
+          <SectionHeader title="Recent activity" subtitle="Who changed what in the active reporting window" />
+          <div className="dbActivityList">
+            {rows.slice().sort((a,b)=>a.entry_date < b.entry_date ? 1 : -1).slice(0,6).map((row)=> (
+              <div key={row.tempId} className="dbActivityItem">
+                <div>
+                  <div style={{ fontWeight: 800 }}>{row.entry_date}</div>
+                  <div className="muted" style={{ fontSize: 12 }}>{row.notes || 'Timesheet activity'} • {row.project_id || 'Unassigned project'}</div>
+                </div>
+                <StatusChip state={(row.status || 'draft') as any} label={row.status || 'draft'} />
+              </div>
+            ))}
+          </div>
+        </CardPad>
+        <CardPad>
+          <SectionHeader title="Payroll readiness" subtitle="A quick confidence check before finance action" />
+          <div className="dbReadinessMeter"><span style={{ width: `${Math.max(8, Math.min(100, Math.round((approvedHours / Math.max(approvedHours + pendingCount, 1)) * 100)))}%` }} /></div>
+          <div className="dbQueueGrid" style={{ marginTop: 14 }}>
+            <div className="dbQueueItem"><span>Approved hours</span><strong>{approvedHours.toFixed(2)}</strong></div>
+            <div className="dbQueueItem"><span>Approved payroll</span><strong>{currency} {money(approvedPay)}</strong></div>
+            <div className="dbQueueItem"><span>Pending entries</span><strong>{pendingCount}</strong></div>
+            <div className="dbQueueItem"><span>Locked state</span><strong>{periodLocked ? 'Locked' : 'Open'}</strong></div>
+          </div>
+        </CardPad>
+      </div>
+
+      <CardPad>
+        <SectionHeader title="Contractor payroll view" subtitle="Approved pay by contractor for the selected range" />
+        {busy ? (
+          <div className="muted" style={{ marginTop: 12 }}>Loading…</div>
+        ) : contractorCards.length ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginTop: 12 }}>
+            {contractorCards.map((item) => (
+              <div key={item.id} className="card cardPad" style={{ boxShadow: "none" }}>
+                <div className="row" style={{ justifyContent: "space-between", gap: 12 }}>
+                  <div>
+                    <div style={{ fontWeight: 800 }}>{item.name}</div>
+                    <div className="muted" style={{ fontSize: 12 }}>{item.hours.toFixed(2)} hrs • Rate {currency} {money(item.rate)}</div>
+                  </div>
+                  <StatusChip state={item.status === "Ready" ? "approved" : "submitted"} label={item.status} />
+                </div>
+                <div style={{ fontWeight: 900, marginTop: 8 }}>{currency} {money(item.pay)}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="No contractor payroll in range" description="Approved payroll will appear here once time is ready for the selected period." />
+        )}
+      </CardPad>
+    </div>
   );
 }

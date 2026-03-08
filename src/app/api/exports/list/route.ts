@@ -45,7 +45,7 @@ export async function GET(req: Request) {
         .limit(limit),
       supa.from("projects").select("id,name").eq("org_id", profile.org_id),
       supa.from("profiles").select("id,full_name").eq("org_id", profile.org_id),
-      supa.from("payroll_runs").select("id,period_start,period_end,status,paid_at").eq("org_id", profile.org_id),
+      supa.from("payroll_runs").select("id,period_start,period_end,status").eq("org_id", profile.org_id),
       supa
         .from("project_exports")
         .select("id,project_id,period_start,period_end,payload_hash,total_hours,total_amount,currency,is_paid,paid_at,paid_by,paid_note")
@@ -85,7 +85,7 @@ export async function GET(req: Request) {
       const history = exportHistoryByKey.get(historyKey) || [];
       const previousHash = history.find((hash) => hash && hash !== payloadHash) || null;
       const diff_status: "same" | "changed" | "unknown" = payloadHash && previousHash ? (payloadHash === previousHash ? "same" : "changed") : "unknown";
-      const isPaid = !!linkedExport?.is_paid || !!linkedExport?.paid_at || !!linkedRun?.paid_at || String(linkedRun?.status || "").toLowerCase() === "paid";
+      const isPaid = !!linkedExport?.is_paid || !!linkedExport?.paid_at;
 
       return {
         id: row.id,

@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 
 export default function NewEntry(){
   const router = useRouter();
-  const todayIso = new Date().toISOString().slice(0,10);
-  const [date,setDate]=useState(todayIso);
+  const [date,setDate]=useState(new Date().toISOString().slice(0,10));
   const [timeIn,setTimeIn]=useState('09:00');
   const [timeOut,setTimeOut]=useState('17:00');
 

@@ -1,7 +1,66 @@
-# SETU TRACK — Current Baseline
+# SETU TRACK — CURRENT BASELINE
 
-SETU TRACK is a contractor operations and payroll workspace built with Next.js, Supabase, and a branded SaaS UI shell.
+**Brand system active:** SETU_Rebuilt_Startup_Brand_System  
+**Primary UI reference:** SETU_TRACK_SaaS_Interface_Blueprint_Pack
 
+Brand assets live in:
+- `public/brand/setu-groups-logo.svg`
+- `public/brand/setu-track-logo.svg`
+- `public/brand/setu-knot-icon.svg`
+- `public/favicon.ico` (generated from `favicon_16/32.png`)
+
+
+
+# SETU TRACK SaaS
+
+
+## Product Goals
+🚀 Product Direction (2026)
+
+This platform is evolving into a:
+
+**Contractor-First Payroll Command Platform**
+
+Inspired by Deel’s UX clarity,
+focused on financial authority and workflow transparency.
+
+Primary objectives:
+
+* Clear payroll summary surfaces
+
+* Workflow-driven approval visibility
+
+* Manager-level oversight
+
+* Audit-ready design
+
+* Calm enterprise UI
+
+**See /docs/PRODUCT_GOALS.md for the full product charter.**
+
+Key docs:
+- `docs/SETU_TRACK_PRODUCT_ARCHITECTURE.md` — current architecture + baseline definition
+- `docs/SETU_TRACK_EXECUTION_ROADMAP.md` — current execution roadmap from this baseline
+- `docs/RELEASE_CHECKLIST.md` — what’s completed + what to verify before release
+- `docs/UI_STRATEGY.md` — UI rules + component hierarchy
+
+## Current baseline status
+Baseline is completed through **Phase 2.8 (Deel-level export polish + Export Center + client deliverable packaging)**.
+
+What should work end-to-end in this baseline:
+- Lock a pay period (“Monthly close”) → creates an immutable payroll run snapshot
+- Payroll report shows locked state + trust/audit panel
+- Payroll report shows **Diff vs previous locked period** (org + optional project scope)
+- Locked/Closed/Approved status chips are consistent and read as “complete” (green)
+- Exports:
+  - CSV: Summary + Detail (official exports require locked period)
+  - PDF: Summary + Detail generated server-side (no browser print)
+  - Client bundle: Project-scoped ZIP (Summary+Detail CSV + Summary+Detail PDF + manifest)
+- “Locked by” displays the user’s **full name** (not UUID)
+- Official exports generate immutable **export receipts** (`export_events`) visible on Payroll + Payroll Run Detail pages
+- Admin Export Center: `/admin/exports` (audit log + receipt drill-in)
+
+See `docs/RELEASE_CHECKLIST.md` for the full completed list + verification steps.
 ## Run locally
 
 ```bash
@@ -9,94 +68,214 @@ npm install
 npm run dev
 ```
 
-Production verification:
+## 🧱 Development Rule
 
-```bash
-npm run build
-npm run start
-```
+All new UI changes must align with:
 
-## Core stack
+* PRODUCT_GOALS.md
 
-- Next.js App Router
-- TypeScript
-- Supabase Auth + Postgres
-- Custom token-based UI system in `src/app/globals.css`, `src/styles/tokens.css`, and `src/styles/components.css`
+* DEEL_UX_GAPS.md
 
-## Branding system
+No feature additions without alignment to product pillars.
 
-Canonical brand constants live in:
 
-The current canonical `logo.svg` was rebuilt from the user-provided official PNG asset so the app now uses the correct SETU TRACK logo everywhere without changing the existing layout.
+## Phase 2.6 — Export-to-export variance + Stage timeline
 
-- `src/config/brand.ts`
+- Export receipts already logged in `export_events` (Phase 2.4).
+- Phase 2.6 adds snapshot-safe variance vs the most recent official export for the period/project via `GET /api/exports/since-last`.
+- Adds a Stage timeline: Preview → Approved → Locked → Exported → Paid.
+- Adds admin 'Mark paid' workflow for payroll runs (DB + API).
 
-Canonical logo assets live in:
+## Next after deployment
 
-- `public/brand/logo.svg`
-- `public/brand/logo-mark.svg`
-- `public/brand/logo@2x.png`
+### Phase 2.9 — Client deliverables (brand + handoff)
+- Add org branding (logo, legal name, currency) to PDF headers + cover
+- Export email handoff: generate “client-ready email” text + attach bundle
+- Optional: invoice-style PDF + PO/reference fields
 
-Primary reusable brand lockup component:
+### Phase 3 — Multi-tenant readiness
+- Org settings page (branding + compliance + export defaults)
+- Enterprise audit log expansion (lock/unlock/pay/export events)
 
-- `src/components/brand/BrandLockup.tsx`
 
-### How to update the logo
+## 2026-03-06 Cleanup + Stabilization
 
-1. Replace `public/brand/logo.svg` with the new full lockup.
-2. Replace `public/brand/logo-mark.svg` with the new symbol-only mark.
-3. Optionally replace `public/brand/logo@2x.png` for legacy PNG fallback.
-4. Update `src/config/brand.ts` if the name, tagline, description, or parent-company attribution changes.
+Completed today:
+- removed stale duplicate payroll runs client file so only the active src/app route tree remains
+- added migration `0024_project_exports_totals.sql` to persist `total_hours`, `total_amount`, and `currency` on `project_exports`
+- fixed payroll summary API to read real persisted totals with metadata fallback
+- updated client export flow to save project export totals when generating payroll client bundles
+- updated payroll run detail API to return normalized `run.is_paid`, `lines`, and `receipts`
+- added visible Mark Paid / Mark Unpaid controls on payroll runs list and payroll run detail
+- strengthened SETU sidebar and nav styling so the indigo + saffron shell is consistently applied
 
-### How tagline usage works
+Current working areas:
+- Dashboard
+- Timesheet
+- Payroll summary
+- Payroll runs list
+- Payroll run detail
+- Project exports / receipts
+- Admin pages
 
-The tagline is centralized in `src/config/brand.ts` and rendered through `BrandLockup` so the login page and sidebar stay consistent.
+Before deploy:
+1. run Supabase migration `0024_project_exports_totals.sql`
+2. run `npm install`
+3. run `npm run build`
+4. deploy to Vercel
 
-Current tagline:
+Tomorrow next:
+- payroll PDF polish
+- exports reconciliation UX
+- admin org/billing refinements
+- settings appearance enforcement across remaining pages
 
-```txt
-CONNECT . TRACK . GROW
-```
 
-## Main areas reviewed in this pass
+## 2026-03-06 Payroll Report V3
 
-- Login page
-- Sidebar branding and mobile drawer branding
-- Shared brand asset usage and canonical paths
-- Auth form accessibility and focus states
-- Footer attribution on login
-- README + changelog updates
+Implemented today:
+- Payroll Report upgraded to a finance-facing workspace with three lenses:
+  - By Project
+  - By Contractor
+  - Register
+- Filters now support:
+  - Current Week / Last Week
+  - Current Month / Last Month
+  - Custom Range
+  - Closed only / Open + Closed
+- Contractor summaries now include anyone with active time entries in scope, including admins and managers when they logged time.
+- Payroll summary API now returns KPI cards, trend data, project summary, contractor summary, register rows, recent activity, and filter options in one payload.
 
-## 2026-03-07 brand, login, and shell cleanup release
+Files touched in this pass:
+- `src/app/api/payroll/summary/route.ts`
+- `src/app/reports/payroll/page.tsx`
+- `src/app/globals.css`
+- `docs/PAYROLL_REPORT_V3.md`
 
-Included in this pass:
+Next recommended polish:
+- tighten export-link consistency so Exports shows fewer `Not linked` rows
+- add optional run-action export menu polish on Payroll Runs
+- tighten manager/project access rules if visibility logic changes
 
-- replaced broken/inconsistent main logo usage with a canonical SVG brand system
-- added `BrandLockup` and centralized brand constants in `src/config/brand.ts`
-- refreshed the login page with a responsive logo lockup, visible tagline, improved labels, better focus states, and footer attribution
-- replaced sidebar wordmark usage with the shared SVG lockup and removed duplicate brand naming drift
-- added symbol-only SVG asset for compact contexts and PNG fallback for legacy support
-- updated documentation for asset locations and future brand updates
 
-## Environment and auth notes
+## 2026-03-06 Payroll + Export Stability Patch
 
-For production auth to work correctly, keep Supabase URL configuration aligned with the live domain:
+Latest repo corrections in this package:
+- fixed the Payroll Report API/UI payload mismatch that caused `Cannot read properties of undefined (reading "preset")`
+- corrected payroll summary to use `entry_date` semantics and locked payroll snapshots from `payroll_runs` + `payroll_run_entries`
+- removed invalid `export_events` column assumptions in payroll summary (`created_by`, `payload_hash`) and aligned the endpoint to real schema fields
+- kept paid state + receipts driven from `project_exports` / `export_events`
+- Exports table now resolves **Project Name** instead of showing only raw project ids
+- AppShell branding strengthened with the SETU TRACK logo and warmer active-nav treatment
 
-- Site URL: `https://setutrack.com`
-- Redirect URL: `https://setutrack.com/auth/callback`
+Primary files updated in this patch:
+- `src/app/api/payroll/summary/route.ts`
+- `src/app/api/exports/list/route.ts`
+- `src/app/admin/exports/page.tsx`
+- `src/components/layout/AppShell.tsx`
+- `src/app/globals.css`
+- `docs/SETU_STABILIZATION_PASS_2026-03-06.md`
 
-## Recommended validation after unzip
 
+## 2026-03-06 stabilization pass
+
+Included in this repo update:
+- Restored global SETU UI tokens + shared component styles through `src/app/globals.css` imports.
+- Fixed shell/layout styling regressions across dashboard, payroll, payroll runs, and exports.
+- Fixed payroll summary user-name resolution so visible active users do not fall back to `Unknown User` unless no profile name exists.
+- Improved project-name fallback logic in payroll summary and recent export activity.
+- Enriched `/api/exports/list` so receipts carry project name, period label, and paid-state metadata cleanly.
+- Updated dashboard admin summary to use live payroll run + current-period entry aggregation rather than depending on a single RPC.
+
+
+## 2026-03-06 Brand Integration + Reporting Polish
+
+Included in this repo package:
+- brand asset integration refreshed from the SETU brand system zip
+- favicon, app icon, manifest, Apple touch icon, and OG assets added to `public/`
+- metadata updated for branded icons + social cards
+- login page redesigned into a full SETU branded authentication experience
+- admin dashboard upgraded with current month vs previous month payroll comparison cards and hours deltas
+- export center upgraded with clearer receipt status, diff labeling, project/period context, and paid-state summaries
+- receipt drawer upgraded with stronger project-period hierarchy and paid-state controls
+- payroll report actions refined so linked exports surface receipt history and export tracking more clearly
+
+Recommended deployment check:
 1. `npm install`
 2. `npm run build`
-3. verify `/login` on desktop + mobile
-4. verify sidebar lockup on authenticated routes
-5. verify the mobile drawer brand lockup
-6. verify dark theme brand contrast
+3. verify `/login`, `/dashboard`, `/reports/payroll`, `/reports/payroll-runs`, and `/admin/exports`
 
-## Latest update: mobile UX and timesheet quick-fill
 
-- Mobile brand assets now use cleaned SVG wrappers with PNG fallbacks for sharper logo rendering in the header, drawer, and shared lockups.
-- The weekly timesheet automatically opens on the current week and scrolls to today's date.
-- Quick-fill actions are available on the weekly timesheet to copy yesterday into today and to copy last week into the current week when that week is still empty.
-- Copied lines remain fully editable until saved or submitted.
+## 2026-03-07 UI / UX stabilization sprint
+
+Included in this replacement repo:
+- rebuilt the shell branding hierarchy so the product shows as **SETU TRACK** with **SETU GROUP** as the parent brand
+- replaced the oversized sidebar/header logo treatment with a compact icon + product identity block
+- removed deprecated mobile web app metadata that was generating browser console warnings
+- added dedicated approvals dashboard styling so submitted weeks render as real approval cards instead of raw dev tables
+- tightened payroll report narrative panels and payroll runs trust/audit summary presentation
+- improved people directory toolbar styling and filter consistency
+- retained the prior runtime fix for the admin dashboard payroll summary API path
+
+Recommended verification after deploy:
+1. `/dashboard`
+2. `/timesheet`
+3. `/approvals`
+4. `/projects`
+5. `/profiles`
+6. `/reports/payroll`
+7. `/reports/payroll-runs`
+8. `/admin/org-settings`
+
+
+## Phase 2B — Financial Intelligence Layer
+- project budget tracking is now schema-backed with billing rate + cost tracking fields
+- contractor payroll completeness now supports score-based readiness checks
+- payroll export ledger now records audit-ready export history
+- payroll run detail now exposes project allocation + export history context
+
+
+## 2026-03-08 release highlights
+
+This repo package includes a focused product-quality pass across branding, dashboard hierarchy, timesheet UX, and responsive behavior.
+
+### Brand system
+- canonical brand config: `src/config/brand.ts`
+- canonical lockup component: `src/components/brand/BrandLockup.tsx`
+- canonical assets:
+  - `public/brand/logo.svg`
+  - `public/brand/logo-mark.svg`
+  - `public/brand/logo@2x.png`
+  - `public/brand/logo-mark.png`
+
+### What changed in this pass
+- repaired login logo rendering on desktop and mobile
+- refreshed app shell brand usage in sidebar, drawer, and compact mobile header
+- standardized tagline spelling to `CONNECT . TRACK . GROW`
+- added login footer attribution: `A product of SETU Groups LLC.`
+- added a global dashboard period control bar for admin surfaces
+- added action-queue style dashboard KPIs and recent activity/readiness cards
+- improved weekly timesheet UX with:
+  - copy yesterday → today
+  - copy last week → current week
+  - repeat previous entry
+  - duplicate to tomorrow
+  - apply line to remaining weekdays
+  - local weekly templates (save/apply)
+  - inline validation and clearer submitted-state feedback
+- improved responsive behavior across login, dashboard, timesheet, payroll report, drawer, and billing layouts
+
+### Local run
+```bash
+npm install
+npm run dev
+```
+
+### Recommended verification before deploy
+```bash
+npm run typecheck
+npm run build
+```
+
+### Branding rule
+Do not hard-code logo paths in page components. Use `src/config/brand.ts` and `BrandLockup`.

@@ -2,6 +2,9 @@
 
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { supabase } from "../../lib/supabaseBrowser";
+import { useProfile } from "../../lib/useProfile";
+import BrandLockup from "../brand/BrandLockup";
 import {
   LayoutDashboard,
   Clock3,
@@ -20,10 +23,6 @@ import {
   Building2,
   BarChart3,
 } from "lucide-react";
-import BrandLockup from "../brand/BrandLockup";
-import { BRAND } from "../../config/brand";
-import { supabase } from "../../lib/supabaseBrowser";
-import { useProfile } from "../../lib/useProfile";
 
 type Props = {
   title?: string;
@@ -65,7 +64,7 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
 
   const role = profile?.role || "user";
   const fullName = profile?.full_name || "User";
-  const orgName = profile?.org_name || profile?.company_name || "Workspace";
+  const orgName = profile?.org_name || "Workspace";
   const isAdmin = role === "admin";
 
   const navItems: NavItem[] = useMemo(
@@ -161,19 +160,17 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
     <div className="mwShellTop appShell">
       <header className="mwTopInner">
         <div className="mwTopLeft">
-          <button className="mwHamburger" onClick={() => setMobileOpen(true)} aria-label="Open menu" type="button">
+          <button
+            className="mwHamburger"
+            onClick={() => setMobileOpen(true)}
+            aria-label="Open menu"
+            type="button"
+          >
             <Menu size={18} />
           </button>
 
-          <button
-            type="button"
-            className="mwBrandButton mwDesktopHidden mwHeaderBrand"
-            onClick={() => go("/dashboard")}
-            aria-label={`Go to ${BRAND.name} dashboard`}
-          >
-            <span className="mwHeaderBrandMark mwHeaderBrandMarkIconOnly">
-              <img src={BRAND.logo.markPng} alt="" aria-hidden="true" />
-            </span>
+          <button type="button" className="mwBrandButton mwDesktopHidden mwHeaderBrand" onClick={() => go("/dashboard")} aria-label="Go to dashboard">
+            <BrandLockup iconOnly compact className="mwHeaderBrandLockup" />
           </button>
         </div>
 
@@ -208,7 +205,11 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
                   </span>
                 </button>
 
-                <button type="button" className="mwMenuItem" onClick={() => go("/settings/appearance")}>
+                <button
+                  type="button"
+                  className="mwMenuItem"
+                  onClick={() => go("/settings/appearance")}
+                >
                   <span className="mwInlineIconLabel">
                     <Palette size={16} />
                     Change theme
@@ -259,17 +260,15 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
         <div className="mwSidebarBrand">
           <button
             type="button"
-            className="mwSidebarBrandBtn mwSidebarBrandLockup"
+            className="mwSidebarBrandBtn mwSidebarBrandHero"
             onClick={() => go("/dashboard")}
-            aria-label={`Go to ${BRAND.name} dashboard`}
-          >
-            <BrandLockup
-              logoClassName="mwSidebarWordmark"
-              taglineClassName="mwSidebarBrandTagline"
-              descriptionClassName="mwSidebarBrandCaption"
-              showDescription
-              priority
-            />
+            aria-label="Go to dashboard"
+>
+            <span className="mwSidebarLogoCard"><BrandLockup className="mwSidebarLockup" showTagline={false} /></span>
+            <span className="mwSidebarBrandCopy">
+              <span className="mwSidebarEyebrow">CONNECT . TRACK . GROW</span>
+              <span className="mwSidebarBrandCaption">Contractor operations, payroll intelligence, and analytics</span>
+            </span>
           </button>
 
           <div className="mwOrgBadge">
@@ -301,19 +300,23 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
             <div className="mwDrawerHeader">
               <button
                 type="button"
-                className="mwSidebarBrandBtn mwSidebarBrandLockup"
+                className="mwSidebarBrandBtn mwSidebarBrandHero"
                 onClick={() => go("/dashboard")}
-                aria-label={`Go to ${BRAND.name} dashboard`}
-              >
-                <BrandLockup
-                  logoClassName="mwSidebarWordmark"
-                  taglineClassName="mwSidebarBrandTagline"
-                  descriptionClassName="mwSidebarBrandCaption"
-                  showDescription
-                />
+                aria-label="Go to dashboard"
+>
+                <span className="mwSidebarLogoCard"><BrandLockup className="mwSidebarLockup" showTagline={false} /></span>
+                <span className="mwSidebarBrandCopy">
+                  <span className="mwSidebarEyebrow">CONNECT . TRACK . GROW</span>
+                  <span className="mwSidebarBrandCaption">Contractor operations, payroll intelligence, and analytics</span>
+                </span>
               </button>
 
-              <button type="button" className="iconBtn" onClick={() => setMobileOpen(false)} aria-label="Close menu">
+              <button
+                type="button"
+                className="iconBtn"
+                onClick={() => setMobileOpen(false)}
+                aria-label="Close menu"
+              >
                 <X size={18} />
               </button>
             </div>
@@ -353,7 +356,11 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
                   </span>
                 </button>
 
-                <button type="button" className="mwSideItem" onClick={() => go("/settings/appearance")}>
+                <button
+                  type="button"
+                  className="mwSideItem"
+                  onClick={() => go("/settings/appearance")}
+                >
                   <span className="mwInlineIconLabel">
                     <Palette size={16} />
                     Change theme
@@ -369,7 +376,12 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
                   </button>
                 )}
 
-                <button type="button" className="mwSideItem" onClick={signOut} style={{ color: "var(--danger)" }}>
+                <button
+                  type="button"
+                  className="mwSideItem"
+                  onClick={signOut}
+                  style={{ color: "var(--danger)" }}
+                >
                   <span className="mwInlineIconLabel">
                     <LogOut size={16} />
                     Log out

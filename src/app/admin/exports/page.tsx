@@ -30,24 +30,20 @@ type ExportReceipt = {
 
 type Row = ExportReceipt;
 
+function DiffBadge({ row }: { row: Row }) {
+  const status = row.diff_status || "unknown";
+  const text = row.meta?.diff_status_label || (status === "same" ? "Matches previous" : status === "changed" ? "Updated" : "Baseline export");
+  return <span className={`pill setuDiffChip ${status}`}>{text}</span>;
+}
+
+function ReceiptBadge({ row }: { row: Row }) {
+  const label = row.meta?.receipt_status_label || "Receipt";
+  const cls = row.meta?.is_paid ? "pill ok" : row.project_export_id ? "pill warn" : "pill";
+  return <span className={cls}>{label}</span>;
+}
+
 function money(amount: number, currency = "USD") {
   return `${currency} ${Number(amount || 0).toFixed(2)}`;
-}
-
-function isPaidReceipt(row: Row) {
-  return !!row.meta?.is_paid || !!row.meta?.paid_at || String(row.meta?.payroll_run_status || "").toLowerCase() === "paid";
-}
-
-function diffClass(status: Row["diff_status"]) {
-  if (status === "same") return "pill ok";
-  if (status === "changed") return "pill warn";
-  return "pill";
-}
-
-function receiptClass(row: Row) {
-  if (isPaidReceipt(row)) return "pill ok";
-  if (row.project_export_id) return "pill warn";
-  return "pill";
 }
 
 export default function AdminExportsPage() {
@@ -55,52 +51,6 @@ export default function AdminExportsPage() {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Row | null>(null);
-  const [showPaidOnly, setShowPaidOnly] = useState(false);
-  const [query, setQuery] = useState("");
-
-  async function load() {
-    setLoading(true);
-    try {
-      const json = await apiJson<{ ok: boolean; exports?: Row[]; error?: string }>("/api/exports/list");
-      if (!json?.ok) throw new Error(json?.error || "Failed to load exports.");
-      setRows((json.exports || []) as Row[]);
-    } catch (e) {
-      console.error(e);
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    void load();
-  }, []);
-
-  const filteredRows = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return rows.filter((row) => {
-      if (showPaidOnly && !isPaidReceipt(row)) return false;
-      if (!q) return true;
-      return [
-        row.label,
-        row.type,
-        row.project_name,
-        row.project_id,
-        row.meta?.period_label,
-        row.actor_name,
-      ]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(q));
-    });
-  }, [rows, showPaidOnly, query]);
-
-  const totals = useMemo(() => {
-    const linked = rows.filter((row) => !!row.project_export_id).length;
-    const paid = rows.filter((row) => isPaidReceipt(row)).length;
-    const changed = rows.filter((row) => row.diff_status === "changed").length;
-    const totalAmount = rows.reduce((sum, row) => sum + Number(row.meta?.total_amount || 0), 0);
-    return { linked, paid, changed, totalAmount };
-  }, [rows]);
 
   const columns = useMemo(
     () =>
@@ -116,31 +66,29 @@ export default function AdminExportsPage() {
           ),
         },
         {
-          key: "project",
+          key: "project_id",
           header: "Project / Period",
           render: (r: Row) => (
             <div className="setuReceiptStack">
               <div style={{ fontWeight: 800 }}>{r.project_name || r.project_id || "Org-level export"}</div>
               <div className="setuMiniHint">{r.meta?.period_label || "No period linked"}</div>
-              {r.meta?.total_amount ? (
-                <div className="setuMiniHint">{money(Number(r.meta.total_amount || 0), r.meta?.currency || "USD")} • {Number(r.meta?.total_hours || 0).toFixed(2)} hrs</div>
-              ) : null}
+              {r.meta?.total_amount ? <div className="setuMiniHint">{money(Number(r.meta.total_amount || 0), r.meta?.currency || "USD")} • {Number(r.meta?.total_hours || 0).toFixed(2)} hrs</div> : null}
             </div>
           ),
         },
         {
-          key: "status",
+          key: "statuses",
           header: "Status",
           render: (r: Row) => (
             <div className="setuStatusStack">
-              <span className={receiptClass(r)}>{isPaidReceipt(r) ? "Paid receipt" : r.project_export_id ? "Linked receipt" : "Audit receipt"}</span>
-              <span className={diffClass(r.diff_status)}>{r.meta?.diff_status_label || "Baseline export"}</span>
+              <ReceiptBadge row={r} />
+              <DiffBadge row={r} />
               {r.meta?.payroll_run_status ? <span className="setuMiniHint">Run: {r.meta.payroll_run_status}</span> : null}
             </div>
           ),
         },
         {
-          key: "created",
+          key: "created_at",
           header: "Created",
           render: (r: Row) => (
             <div className="setuReceiptStack">
@@ -168,63 +116,95 @@ export default function AdminExportsPage() {
     []
   );
 
+  async function load() {
+    setLoading(true);
+    try {
+      const json = await apiJson<{ ok: boolean; exports?: Row[]; error?: string }>("/api/exports/list");
+      if (!json?.ok) throw new Error(json?.error || "Failed to load exports.");
+      setRows((json.exports || []) as Row[]);
+    } catch (e: any) {
+      console.error(e);
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const totals = useMemo(() => {
+    const linked = rows.filter((row) => !!row.project_export_id).length;
+    const paid = rows.filter((row) => !!row.meta?.is_paid).length;
+    const changed = rows.filter((row) => row.diff_status === "changed").length;
+    return { linked, paid, changed };
+  }, [rows]);
+
   return (
     <AppShell
       title="Exports"
       subtitle="Audit receipts, client export linkage, and paid-state history across payroll operations."
-      right={<Button variant="secondary" onClick={load} disabled={loading}>Refresh</Button>}
+      right={
+        <div className="row" style={{ gap: 10 }}>
+          <Button variant="secondary" onClick={load} disabled={loading}>
+            Refresh
+          </Button>
+        </div>
+      }
     >
-      <section className="setuReportPage setuPageNarrow setuExportsPage">
+      <div style={{ maxWidth: 1280 }}>
         <AdminTabs active="exports" />
 
-        <div className="setuFilterBar setuCompactToolbar">
-          <div className="setuFilterBarTop">
-            <div>
-              <div className="setuSectionTitle">Receipt ledger</div>
-              <div className="setuSectionHint">Every payroll export, linked project export, and audit artifact in one searchable table.</div>
-            </div>
-            <div className="setuFilterMeta">
-              <span className="pill">{filteredRows.length} visible</span>
-              <span className="pill">{totals.paid} paid</span>
-              <span className="pill">{totals.linked} linked</span>
-            </div>
-          </div>
-          <div className="setuViewToolbar">
-            <div className="setuViewToolbarLeft">
-              <input
-                className="input setuToolbarSearch"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search receipt, project, period, or actor"
-              />
-              <button className={`pill ${showPaidOnly ? "ok" : ""}`} onClick={() => setShowPaidOnly((v) => !v)}>
-                {showPaidOnly ? "Showing paid only" : "Show paid only"}
-              </button>
-            </div>
-          </div>
-        </div>
-
+        
         <WorkspaceKpiStrip
           items={[
             { label: "Receipts", value: String(rows.length), hint: "Tracked export receipts" },
             { label: "Project-linked", value: String(totals.linked), hint: "End-to-end client export linkage" },
-            { label: "Paid receipts", value: String(totals.paid), hint: "Paid or run-paid artifacts" },
-            { label: "Export value", value: money(totals.totalAmount), hint: "Visible linked export totals" },
+            { label: "Paid", value: String(totals.paid), hint: "Receipts connected to paid exports" },
+            { label: "Changed payloads", value: String(totals.changed), hint: "Diff-status receipts" },
           ]}
         />
 
-        {loading ? (
-          <div className="card cardPad"><div className="muted">Loading…</div></div>
-        ) : filteredRows.length === 0 ? (
-          <EmptyState title="No exports found" description="Try a different search or clear the paid-only filter." />
-        ) : (
-          <div className="setuExportTable setuDataSurface">
-            <DataTable rows={filteredRows} columns={columns} rowKey={(r: Row) => r.id} />
+<div className="setuCompareGrid" style={{ marginTop: 12 }}>
+          <div className="setuCompareCard setuCompareCardPrimary">
+            <div className="setuCompareLabel">Total receipts</div>
+            <div className="setuCompareValue">{rows.length}</div>
+            <div className="setuCompareMeta">All export receipts in org scope</div>
           </div>
-        )}
+          <div className="setuCompareCard">
+            <div className="setuCompareLabel">Linked to project exports</div>
+            <div className="setuCompareValue">{totals.linked}</div>
+            <div className="setuCompareMeta">End-to-end project export tracking</div>
+          </div>
+          <div className="setuCompareCard">
+            <div className="setuCompareLabel">Paid receipts</div>
+            <div className="setuCompareValue">{totals.paid}</div>
+            <div className="setuCompareMeta">Receipts attached to paid project exports</div>
+          </div>
+          <div className="setuCompareCard">
+            <div className="setuCompareLabel">Updated payloads</div>
+            <div className="setuCompareValue">{totals.changed}</div>
+            <div className="setuCompareMeta">Exports that differ from prior payloads</div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 12 }}>
+          {loading ? (
+            <div className="card cardPad">
+              <div className="muted">Loading…</div>
+            </div>
+          ) : rows.length === 0 ? (
+            <EmptyState title="No exports yet" description="Export receipts will appear here when you generate reports." />
+          ) : (
+            <div className="setuExportTable">
+              <DataTable rows={rows} columns={columns} rowKey={(r: Row) => r.id} />
+            </div>
+          )}
+        </div>
 
         <MetaFooter />
-      </section>
+      </div>
 
       <ExportReceiptDrawer open={open} onClose={() => setOpen(false)} receipt={selected as any} />
     </AppShell>
