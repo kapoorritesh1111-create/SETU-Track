@@ -23,7 +23,7 @@ const DEFAULTS: OrgSettings = {
   company_name: "",
   legal_name: "",
   logo_url: null,
-  accent_color: "blue",
+  accent_color: "#22C7BE",
   invoice_header_json: {},
   invoice_footer_text: "",
   default_currency: "USD",
@@ -197,7 +197,7 @@ export default function AdminOrgSettingsPage() {
         <div className="card cardPad" style={{ maxWidth: 980, marginTop: 12 }}>
           <div className="h2">Branding</div>
           <div className="muted" style={{ marginTop: 4 }}>
-            Accent controls button + highlight color across the app.
+            Brand palette follows the official SETU TRACK logo. Keep this on the default teal-blue value unless you are updating the master brand system.
           </div>
 
           <div className="mwForm" style={{ marginTop: 14 }}>
@@ -205,7 +205,7 @@ export default function AdminOrgSettingsPage() {
               <div className="mwLabel">Accent color</div>
               <select
                 className="input"
-                value={settings.accent_color || "blue"}
+                value={settings.accent_color || "#22C7BE"}
                 onChange={(e) => setSettings((s) => ({ ...s, accent_color: e.target.value }))}
               >
                 <option value="blue">Blue (SETU default)</option>

@@ -10,8 +10,8 @@ export function toISODate(d: Date) {
 
 function startOfWeek(d: Date, weekStart: WeekStart) {
   const copy = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const day = copy.getDay(); // 0 Sun..6 Sat
-  const diff = weekStart === "sunday" ? day : (day + 6) % 7; // monday => monday=0
+  const day = copy.getDay();
+  const diff = weekStart === "sunday" ? day : (day + 6) % 7;
   copy.setDate(copy.getDate() - diff);
   copy.setHours(0, 0, 0, 0);
   return copy;
@@ -54,7 +54,34 @@ export function presetToRange(preset: Exclude<DatePreset, "custom">, weekStart: 
     return { start: toISODate(firstDayOfMonth(now)), end: toISODate(lastDayOfMonth(now)) };
   }
 
-  // last_month
   const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   return { start: toISODate(firstDayOfMonth(lastMonth)), end: toISODate(lastDayOfMonth(lastMonth)) };
+}
+
+export function previousRangeFor(start: string, end: string) {
+  const startDate = new Date(`${start}T00:00:00`);
+  const endDate = new Date(`${end}T00:00:00`);
+  const days = Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / 86400000) + 1);
+  const prevEnd = new Date(startDate);
+  prevEnd.setDate(prevEnd.getDate() - 1);
+  const prevStart = new Date(prevEnd);
+  prevStart.setDate(prevStart.getDate() - (days - 1));
+  return { start: toISODate(prevStart), end: toISODate(prevEnd) };
+}
+
+export function presetLabel(preset: DatePreset, start?: string, end?: string) {
+  switch (preset) {
+    case "current_week":
+      return "Current week";
+    case "last_week":
+      return "Last week";
+    case "current_month":
+      return "Current month";
+    case "last_month":
+      return "Last month";
+    case "custom":
+      return start && end ? `${start} → ${end}` : "Custom range";
+    default:
+      return "Period";
+  }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "../../../components/layout/AppShell";
 import Button from "../../../components/ui/Button";
 import MetaFooter from "../../../components/ui/MetaFooter";
@@ -8,6 +9,7 @@ import { EmptyState } from "../../../components/ui/EmptyState";
 import Drawer from "../../../components/ui/Drawer";
 import ExportReceiptDrawer from "../../../components/ui/ExportReceiptDrawer";
 import { apiJson } from "../../../lib/api/client";
+import { buildRangeQuery, coercePreset } from "../../../lib/rangeQuery";
 
 type PaymentStatus = "awaiting_export" | "awaiting_payment" | "paid";
 type ExportStatus = "not_generated" | "generated" | "linked";
@@ -159,20 +161,23 @@ function MetricCard({ label, value, hint }: { label: string; value: string; hint
 }
 
 export default function PayrollReportPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialPreset = coercePreset(searchParams.get("preset"), "last_month");
   const [loading, setLoading] = useState(true);
   const [payload, setPayload] = useState<ApiPayload | null>(null);
   const [error, setError] = useState<string>("");
 
   const [view, setView] = useState<ViewMode>("project");
-  const [preset, setPreset] = useState<DatePreset>("last_month");
+  const [preset, setPreset] = useState<DatePreset>(initialPreset);
   const [periodScope, setPeriodScope] = useState<PeriodScope>("closed_only");
   const [projectId, setProjectId] = useState("");
   const [personId, setPersonId] = useState("");
   const [paymentStatus, setPaymentStatus] = useState<string>("all");
   const [exportStatus, setExportStatus] = useState<string>("all");
   const [query, setQuery] = useState("");
-  const [start, setStart] = useState("");
-  const [end, setEnd] = useState("");
+  const [start, setStart] = useState(searchParams.get("start") || "");
+  const [end, setEnd] = useState(searchParams.get("end") || "");
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedReceipts, setSelectedReceipts] = useState<Receipt[]>([]);
@@ -263,10 +268,14 @@ export default function PayrollReportPage() {
     URL.revokeObjectURL(url);
   }
 
+  const sharedQuery = buildRangeQuery({ preset, start, end });
+
   const headerRight = (
     <div className="setuHeaderActions">
+      <Button variant="secondary" onClick={() => router.push(`/dashboard?${sharedQuery}`)}>Dashboard</Button>
+      <Button variant="secondary" onClick={() => router.push(`/analytics?${sharedQuery}`)}>Analytics</Button>
       <Button variant="secondary" onClick={() => void load()} disabled={loading}>Refresh</Button>
-      <Button variant="secondary" onClick={() => (window.location.href = "/reports/payroll-runs")}>Open Payroll Runs</Button>
+      <Button variant="secondary" onClick={() => router.push("/reports/payroll-runs")}>Open Payroll Runs</Button>
       <Button onClick={exportCurrentView} disabled={!payload?.register?.length}>Export Current View</Button>
     </div>
   );
@@ -278,6 +287,17 @@ export default function PayrollReportPage() {
       right={headerRight}
     >
       <div className="setuReportPage">
+        <div className="setuCommandHero" style={{ marginBottom: 0 }}>
+          <div>
+            <div className="setuSectionEyebrow">Connected workspace</div>
+            <h2 className="setuCommandTitle">Payroll report is the finance-depth surface behind the command center.</h2>
+            <p className="setuCommandText">Use the same active period from dashboard or analytics, then switch between project, contractor, and register views without losing financial context.</p>
+          </div>
+          <div className="setuHeaderActions">
+            <span className="pill">{payload?.range.start || start || "Range"} → {payload?.range.end || end || ""}</span>
+            <button className="pill" onClick={() => router.push(`/approvals?${sharedQuery}`)}>Open approvals queue</button>
+          </div>
+        </div>
         <div className="setuFilterBar">
           <div className="setuFilterGrid">
             <label className="setuField">

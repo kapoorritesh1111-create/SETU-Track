@@ -5,6 +5,7 @@ import RequireOnboarding from "../../components/auth/RequireOnboarding";
 import AppShell from "../../components/layout/AppShell";
 import { apiJson } from "../../lib/api/client";
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { supabase } from "../../lib/supabaseBrowser";
 import { useProfile } from "../../lib/useProfile";
 import { addDays, parseISODate, startOfWeekSunday, toISODate, weekRangeLabel } from "../../lib/date";
@@ -79,6 +80,7 @@ async function fetchPayPeriodStatus(period_start: string, period_end: string) {
 }
 
 function ApprovalsInner() {
+  const searchParams = useSearchParams();
   const { loading: profLoading, profile, userId, error: profErr } = useProfile();
 
   const isAdmin = profile?.role === "admin";
@@ -91,7 +93,7 @@ function ApprovalsInner() {
   const weekEndISO = useMemo(() => toISODate(addDays(weekStart, 6)), [weekStart]);
 
   // View controls
-  const [showAllPending, setShowAllPending] = useState(false); // last N weeks of submitted entries
+  const [showAllPending, setShowAllPending] = useState(() => searchParams.get("scope") === "all"); // last N weeks of submitted entries
   const [selectedGroups, setSelectedGroups] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState("");
 
@@ -411,6 +413,13 @@ useEffect(() => {
 
 
 
+  const queueSummary = useMemo(() => {
+    const totalHours = groups.reduce((sum, group) => sum + group.entries.reduce((inner, entry) => inner + Number(entry.hours_worked || 0), 0), 0);
+    const uniquePeople = new Set(groups.map((group) => group.user_id)).size;
+    const lockedCount = groups.filter((group) => lockByRange[`${group.week_start}__${group.week_end}`]?.locked).length;
+    return { totalHours, uniquePeople, lockedCount, totalGroups: groups.length };
+  }, [groups, lockByRange]);
+
   const headerRight = (
     <div className="apHeaderRight">
       <div className="apToolbar">
@@ -565,6 +574,12 @@ useEffect(() => {
           <div className="hint">This reason will be shown to the contractor.</div>
         </div>
       </Drawer>
+
+      <div className="setuQueueSummary">
+        <div className="setuMetricCard"><div className="setuMetricLabel">Queue items</div><div className="setuMetricValue">{queueSummary.totalGroups}</div><div className="setuMetricHint">{queueSummary.uniquePeople} people across pending approvals</div></div>
+        <div className="setuMetricCard"><div className="setuMetricLabel">Hours awaiting review</div><div className="setuMetricValue">{queueSummary.totalHours.toFixed(2)}</div><div className="setuMetricHint">Submitted work still pending manager signoff</div></div>
+        <div className="setuMetricCard"><div className="setuMetricLabel">Locked ranges</div><div className="setuMetricValue">{queueSummary.lockedCount}</div><div className="setuMetricHint">Locked pay periods remain visible for context</div></div>
+      </div>
 
       {msg ? (
         <div className="alert alertInfo">

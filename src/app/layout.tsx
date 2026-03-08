@@ -5,7 +5,7 @@ import ThemeProvider from "../components/theme/ThemeProvider";
 export const metadata = {
   title: "SETU TRACK",
   description:
-    "SETU TRACK by SETU GROUP — branded workforce time tracking, payroll operations, and export control.",
+    "SETU TRACK by SETU GROUP — connect grow track — workforce time tracking, payroll operations, analytics, and export control.",
   manifest: "/site.webmanifest",
   applicationName: "SETU Track",
   icons: {
@@ -37,7 +37,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" data-theme="light" data-accent="blue" data-density="comfortable" data-radius="lg">
+    <html lang="en" data-theme="light" data-accent="custom" data-density="comfortable" data-radius="lg">
       <body>
         <ThemeProvider>{children}</ThemeProvider>
       </body>

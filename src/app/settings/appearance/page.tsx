@@ -8,20 +8,17 @@ import { supabase } from "../../../lib/supabaseBrowser";
 
 // Keep types narrow so UI stays consistent.
 type ThemeMode = "light" | "dark";
-type Accent = "blue" | "indigo" | "emerald" | "rose" | "slate";
 type Density = "comfortable" | "compact";
 type Radius = "md" | "lg" | "xl";
 
 type UiPrefs = {
   theme: ThemeMode;
-  accent: Accent;
   density: Density;
   radius: Radius;
 };
 
 const DEFAULT_PREFS: UiPrefs = {
   theme: "light",
-  accent: "blue",
   density: "comfortable",
   radius: "lg",
 };
@@ -30,9 +27,6 @@ function isThemeMode(v: unknown): v is ThemeMode {
   return v === "light" || v === "dark";
 }
 
-function isAccent(v: unknown): v is Accent {
-  return v === "blue" || v === "indigo" || v === "emerald" || v === "rose" || v === "slate";
-}
 function isDensity(v: unknown): v is Density {
   return v === "comfortable" || v === "compact";
 }
@@ -46,7 +40,6 @@ function readPrefs(raw: any): UiPrefs {
 
   if (p && typeof p === "object") {
     if (isThemeMode(p.theme)) base.theme = p.theme;
-    if (isAccent(p.accent)) base.accent = p.accent;
     if (isDensity(p.density)) base.density = p.density;
     if (isRadius(p.radius)) base.radius = p.radius;
     return base;
@@ -58,7 +51,6 @@ function readPrefs(raw: any): UiPrefs {
     if (ls) {
       const parsed = JSON.parse(ls);
       if (isThemeMode(parsed.theme)) base.theme = parsed.theme;
-      if (isAccent(parsed.accent)) base.accent = parsed.accent;
       if (isDensity(parsed.density)) base.density = parsed.density;
       if (isRadius(parsed.radius)) base.radius = parsed.radius;
     }
@@ -74,7 +66,6 @@ export default function AppearanceSettingsPage() {
   const initialPrefs = useMemo(() => readPrefs(profileAny), [profileAny?.id, profileAny?.ui_prefs]);
 
   const [theme, setTheme] = useState<ThemeMode>(initialPrefs.theme);
-  const [accent, setAccent] = useState<Accent>(initialPrefs.accent);
   const [density, setDensity] = useState<Density>(initialPrefs.density);
   const [radius, setRadius] = useState<Radius>(initialPrefs.radius);
   const [saving, setSaving] = useState(false);
@@ -82,7 +73,6 @@ export default function AppearanceSettingsPage() {
   // IMPORTANT: when ui_prefs changes, update local state (refresh-safe)
   useEffect(() => {
     setTheme(initialPrefs.theme);
-    setAccent(initialPrefs.accent);
     setDensity(initialPrefs.density);
     setRadius(initialPrefs.radius);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -91,20 +81,19 @@ export default function AppearanceSettingsPage() {
   // Apply visual effects immediately (CSS hooks)
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    document.documentElement.dataset.accent = accent;
     document.documentElement.dataset.density = density;
     document.documentElement.dataset.radius = radius;
 
     try {
-      localStorage.setItem("ts_theme_prefs", JSON.stringify({ theme, accent, density, radius }));
+      localStorage.setItem("ts_theme_prefs", JSON.stringify({ theme, density, radius }));
     } catch {}
-  }, [theme, accent, density, radius]);
+  }, [theme, density, radius]);
 
   async function save() {
     if (!profileAny?.id) return;
     setSaving(true);
 
-    const ui_prefs: UiPrefs = { theme, accent, density, radius };
+    const ui_prefs: UiPrefs = { theme, density, radius };
 
     const { error } = await supabase.from("profiles").update({ ui_prefs }).eq("id", profileAny.id);
 
@@ -138,31 +127,22 @@ export default function AppearanceSettingsPage() {
             <div className="muted" style={{ fontSize: 12, fontWeight: 800, marginBottom: 6 }}>
               Theme
             </div>
-            <select value={theme} onChange={(e) => setTheme(e.target.value as ThemeMode)}>
+            <select className="input" value={theme} onChange={(e) => setTheme(e.target.value as ThemeMode)}>
               <option value="light">Light</option>
               <option value="dark">Dark</option>
             </select>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <div>
-              <div className="muted" style={{ fontSize: 12, fontWeight: 800, marginBottom: 6 }}>
-                Accent
-              </div>
-              <select value={accent} onChange={(e) => setAccent(e.target.value as Accent)}>
-                <option value="blue">Blue</option>
-                <option value="indigo">Indigo</option>
-                <option value="emerald">Emerald</option>
-                <option value="rose">Rose</option>
-                <option value="slate">Slate</option>
-              </select>
-            </div>
+          <div className="alert alertInfo" style={{ marginTop: 12, marginBottom: 12 }}>
+            SETU TRACK now uses the brand palette from the official logo. Users can switch between light and dark mode without changing the product colors.
+          </div>
 
+          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
             <div>
               <div className="muted" style={{ fontSize: 12, fontWeight: 800, marginBottom: 6 }}>
                 Density
               </div>
-              <select value={density} onChange={(e) => setDensity(e.target.value as Density)}>
+              <select className="input" value={density} onChange={(e) => setDensity(e.target.value as Density)}>
                 <option value="comfortable">Comfortable</option>
                 <option value="compact">Compact</option>
               </select>
@@ -173,7 +153,7 @@ export default function AppearanceSettingsPage() {
             <div className="muted" style={{ fontSize: 12, fontWeight: 800, marginBottom: 6 }}>
               Corner radius
             </div>
-            <select value={radius} onChange={(e) => setRadius(e.target.value as Radius)}>
+            <select className="input" value={radius} onChange={(e) => setRadius(e.target.value as Radius)}>
               <option value="md">Medium</option>
               <option value="lg">Large</option>
               <option value="xl">Extra Large</option>

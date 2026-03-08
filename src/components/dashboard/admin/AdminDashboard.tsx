@@ -4,22 +4,22 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabaseBrowser";
 import { apiJson } from "../../../lib/api/client";
-import { presetToRange } from "../../../lib/dateRanges";
-import { CardPad } from "../../ui/Card";
-import { StatCard } from "../../ui/StatCard";
-import { SectionHeader } from "../../ui/SectionHeader";
+import { presetLabel, presetToRange, previousRangeFor, type DatePreset } from "../../../lib/dateRanges";
+import DateRangeToolbar from "../../ui/DateRangeToolbar";
 import { EmptyState } from "../../ui/EmptyState";
-import { MetricsRow } from "../../ui/MetricsRow";
 import { StatusChip } from "../../ui/StatusChip";
 
-type Contractor = { id: string; full_name: string | null; hourly_rate: number | null };
+type Contractor = { id: string; full_name: string | null; hourly_rate: number | null; is_active?: boolean | null };
 type VRow = {
+  id?: string;
   user_id: string;
   full_name?: string | null;
   hours_worked: number | null;
   hourly_rate_snapshot?: number | null;
   status: "draft" | "submitted" | "approved" | "rejected";
   entry_date: string;
+  project_id?: string | null;
+  project_name?: string | null;
 };
 
 type AdminSummary = {
@@ -34,13 +34,28 @@ type AdminSummary = {
   currency?: string;
 };
 
-function money(x: number) {
-  return x.toFixed(2);
-}
+type ExportEvent = {
+  id: string;
+  created_at: string;
+  export_type: string;
+  file_format: string | null;
+  actor_name_snapshot: string | null;
+  project_id: string | null;
+  metadata?: Record<string, unknown> | null;
+};
 
-function monthLabel(startISO: string) {
-  const d = new Date(`${startISO}T00:00:00`);
-  return d.toLocaleString(undefined, { month: "long", year: "numeric" });
+type PayrollRunLite = {
+  id: string;
+  period_start: string;
+  period_end: string;
+  total_amount: number | null;
+  total_hours: number | null;
+  created_at: string | null;
+  status: string | null;
+};
+
+function money(x: number) {
+  return `USD ${x.toFixed(2)}`;
 }
 
 function pctChange(current: number, previous: number) {
@@ -49,202 +64,192 @@ function pctChange(current: number, previous: number) {
   return ((current - previous) / previous) * 100;
 }
 
+function rangeLabel(start: string, end: string) {
+  return `${new Date(`${start}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })} → ${new Date(`${end}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+}
+
 export default function AdminDashboard({ orgId }: { orgId: string; userId: string }) {
   const router = useRouter();
-  const [preset, setPreset] = useState<"current_month" | "last_month">("current_month");
-  const range = useMemo(() => presetToRange(preset, "sunday"), [preset]);
-  const currentMonthRange = useMemo(() => presetToRange("current_month", "sunday"), []);
-  const previousMonthRange = useMemo(() => presetToRange("last_month", "sunday"), []);
-  const [startDate, setStartDate] = useState(range.start);
-  const [endDate, setEndDate] = useState(range.end);
+  const initial = presetToRange("current_month", "sunday");
+  const [preset, setPreset] = useState<DatePreset>("current_month");
+  const [startDate, setStartDate] = useState(initial.start);
+  const [endDate, setEndDate] = useState(initial.end);
 
-  const [contractors, setContractors] = useState<Contractor[]>([]);
   const [rows, setRows] = useState<VRow[]>([]);
+  const [previousRows, setPreviousRows] = useState<VRow[]>([]);
+  const [contractors, setContractors] = useState<Contractor[]>([]);
   const [summary, setSummary] = useState<AdminSummary | null>(null);
-  const [currentMonthSummary, setCurrentMonthSummary] = useState<AdminSummary | null>(null);
-  const [previousMonthSummary, setPreviousMonthSummary] = useState<AdminSummary | null>(null);
-
+  const [previousSummary, setPreviousSummary] = useState<AdminSummary | null>(null);
+  const [events, setEvents] = useState<ExportEvent[]>([]);
+  const [payrollRuns, setPayrollRuns] = useState<PayrollRunLite[]>([]);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [previewBusy, setPreviewBusy] = useState(false);
-  const [blockers, setBlockers] = useState<any[] | null>(null);
-  const [blockerTotals, setBlockerTotals] = useState<{ entries: number; hours: number; amount: number } | null>(null);
+  const [message, setMessage] = useState("");
   const [periodLocked, setPeriodLocked] = useState(false);
   const [lockedAt, setLockedAt] = useState<string | null>(null);
+  const [previewBusy, setPreviewBusy] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [blockers, setBlockers] = useState<any[] | null>(null);
+  const [blockerTotals, setBlockerTotals] = useState<{ entries: number; hours: number; amount: number } | null>(null);
 
   useEffect(() => {
-    setStartDate(range.start);
-    setEndDate(range.end);
-  }, [range.start, range.end]);
+    if (preset === "custom") return;
+    const next = presetToRange(preset, "sunday");
+    setStartDate(next.start);
+    setEndDate(next.end);
+  }, [preset]);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const qs = new URLSearchParams({ period_start: startDate, period_end: endDate });
-        const r = await apiJson<{ ok: boolean; locked: boolean; locked_at: string | null }>(`/api/pay-period/status?${qs.toString()}`);
-        if (cancelled) return;
-        setPeriodLocked(!!r.locked);
-        setLockedAt(r.locked_at);
-      } catch {
-        if (cancelled) return;
-        setPeriodLocked(false);
-        setLockedAt(null);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [startDate, endDate]);
+  const previousRange = useMemo(() => previousRangeFor(startDate, endDate), [startDate, endDate]);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setBusy(true);
-      setMsg("");
-      try {
-        const [{ data: cons, error: consErr }, { data: r, error: rErr }] = await Promise.all([
-          supabase
-            .from("profiles")
-            .select("id,full_name,hourly_rate")
-            .eq("org_id", orgId)
-            .eq("role", "contractor")
-            .eq("is_active", true)
-            .order("full_name", { ascending: true }),
-          supabase
-            .from("v_time_entries")
-            .select("user_id,full_name,hours_worked,hourly_rate_snapshot,status,entry_date")
-            .eq("org_id", orgId)
-            .gte("entry_date", startDate)
-            .lte("entry_date", endDate),
-        ]);
+  async function fetchSummary(period_start: string, period_end: string) {
+    const res = await apiJson<{ ok: true; summary: AdminSummary }>("/api/dashboard/admin-summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ period_start, period_end }),
+    });
+    return res.summary || null;
+  }
 
-        if (cancelled) return;
-        if (consErr) throw consErr;
-        if (rErr) throw rErr;
-
-        setContractors(((cons as any) ?? []) as Contractor[]);
-        setRows(((r as any) ?? []) as VRow[]);
-      } catch (e: any) {
-        if (!cancelled) setMsg(e?.message || "Failed to load dashboard");
-      } finally {
-        if (!cancelled) setBusy(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [orgId, startDate, endDate]);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function fetchSummary(period_start: string, period_end: string) {
-      const res = await apiJson<{ ok: true; summary: AdminSummary }>("/api/dashboard/admin-summary", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ period_start, period_end }),
-      });
-      return res.summary || null;
-    }
-
-    (async () => {
-      try {
-        const [selected, currentMonth, previousMonth] = await Promise.all([
-          fetchSummary(startDate, endDate),
-          fetchSummary(currentMonthRange.start, currentMonthRange.end),
-          fetchSummary(previousMonthRange.start, previousMonthRange.end),
-        ]);
-        if (cancelled) return;
-        setSummary(selected);
-        setCurrentMonthSummary(currentMonth);
-        setPreviousMonthSummary(previousMonth);
-      } catch {
-        if (cancelled) return;
-        setSummary(null);
-        setCurrentMonthSummary(null);
-        setPreviousMonthSummary(null);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [startDate, endDate, currentMonthRange.start, currentMonthRange.end, previousMonthRange.start, previousMonthRange.end]);
-
-  const { approvedHours, approvedPay, pendingCount } = useMemo(() => {
-    let ah = 0;
-    let ap = 0;
-    let pc = 0;
-    for (const r of rows) {
-      const h = Number(r.hours_worked ?? 0);
-      const rate = Number(r.hourly_rate_snapshot ?? 0);
-      if (r.status === "approved") {
-        ah += h;
-        ap += h * rate;
-      }
-      if (r.status === "submitted") pc += 1;
-    }
-    return { approvedHours: ah, approvedPay: ap, pendingCount: pc };
-  }, [rows]);
-
-  const contractorCards = useMemo(() => {
-    const map = new Map<string, { id: string; name: string; hours: number; rate: number; pay: number; status: "Ready" | "Pending" }>();
-    for (const c of contractors) {
-      map.set(c.id, {
-        id: c.id,
-        name: c.full_name || "(no name)",
-        hours: 0,
-        rate: Number(c.hourly_rate ?? 0),
-        pay: 0,
-        status: "Ready",
-      });
-    }
-    for (const r of rows) {
-      if (!map.has(r.user_id)) continue;
-      const item = map.get(r.user_id)!;
-      const h = Number(r.hours_worked ?? 0);
-      const rate = Number(r.hourly_rate_snapshot ?? item.rate);
-      if (r.status === "approved") {
-        item.hours += h;
-        item.pay += h * rate;
-        item.rate = rate;
-      }
-      if (r.status === "submitted") item.status = "Pending";
-    }
-    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [contractors, rows]);
-
-  const currentPayroll = Number(currentMonthSummary?.total_amount ?? 0);
-  const previousPayroll = Number(previousMonthSummary?.total_amount ?? 0);
-  const currentHours = Number(currentMonthSummary?.total_hours ?? 0);
-  const previousHours = Number(previousMonthSummary?.total_hours ?? 0);
-  const payrollChange = pctChange(currentPayroll, previousPayroll);
-  const hoursChange = pctChange(currentHours, previousHours);
-
-  async function closePayroll() {
-    setClosing(true);
-    setMsg("");
+  async function load() {
+    setBusy(true);
+    setMessage("");
     try {
-      const r = await apiJson<{ ok: boolean; run_id?: string; error?: string }>("/api/pay-period/lock", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ period_start: startDate, period_end: endDate }),
-      });
-      if (!r.ok) throw new Error(r.error || "Unable to close payroll");
-      router.push(`/reports/payroll?start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}&locked=1`);
+      const currentEntryQuery = supabase
+        .from("v_time_entries")
+        .select("id,user_id,full_name,hours_worked,hourly_rate_snapshot,status,entry_date,project_id,project_name")
+        .eq("org_id", orgId)
+        .gte("entry_date", startDate)
+        .lte("entry_date", endDate);
+
+      const previousEntryQuery = supabase
+        .from("v_time_entries")
+        .select("id,user_id,full_name,hours_worked,hourly_rate_snapshot,status,entry_date,project_id,project_name")
+        .eq("org_id", orgId)
+        .gte("entry_date", previousRange.start)
+        .lte("entry_date", previousRange.end);
+
+      const contractorQuery = supabase
+        .from("profiles")
+        .select("id,full_name,hourly_rate,is_active")
+        .eq("org_id", orgId)
+        .eq("role", "contractor")
+        .eq("is_active", true)
+        .order("full_name", { ascending: true });
+
+      const runQuery = supabase
+        .from("payroll_runs")
+        .select("id,period_start,period_end,total_amount,total_hours,created_at,status")
+        .eq("org_id", orgId)
+        .order("created_at", { ascending: false })
+        .limit(6);
+
+      const lockPromise = apiJson<{ ok: boolean; locked: boolean; locked_at: string | null }>(`/api/pay-period/status?${new URLSearchParams({ period_start: startDate, period_end: endDate }).toString()}`)
+        .catch(() => ({ ok: true, locked: false, locked_at: null }));
+
+      const exportPromise = apiJson<{ ok: boolean; events?: ExportEvent[] }>(`/api/exports/recent?${new URLSearchParams({ period_start: startDate, period_end: endDate, limit: "6" }).toString()}`)
+        .catch(() => ({ ok: false, events: [] }));
+
+      const [
+        { data: currentEntries, error: currentErr },
+        { data: previousEntries, error: previousErr },
+        { data: contractorRows, error: contractorErr },
+        { data: runRows, error: runErr },
+        selectedSummary,
+        prevSummary,
+        lockStatus,
+        exportResponse,
+      ] = await Promise.all([
+        currentEntryQuery,
+        previousEntryQuery,
+        contractorQuery,
+        runQuery,
+        fetchSummary(startDate, endDate),
+        fetchSummary(previousRange.start, previousRange.end),
+        lockPromise,
+        exportPromise,
+      ]);
+
+      if (currentErr || previousErr || contractorErr || runErr) {
+        throw new Error(currentErr?.message || previousErr?.message || contractorErr?.message || runErr?.message || "Failed to load dashboard");
+      }
+
+      setRows((currentEntries || []) as VRow[]);
+      setPreviousRows((previousEntries || []) as VRow[]);
+      setContractors((contractorRows || []) as Contractor[]);
+      setPayrollRuns((runRows || []) as PayrollRunLite[]);
+      setSummary(selectedSummary);
+      setPreviousSummary(prevSummary);
+      setPeriodLocked(!!lockStatus.locked);
+      setLockedAt(lockStatus.locked_at || null);
+      setEvents(exportResponse.events || []);
     } catch (e: any) {
-      setMsg(e?.message || "Failed to close payroll");
+      setRows([]);
+      setPreviousRows([]);
+      setContractors([]);
+      setPayrollRuns([]);
+      setSummary(null);
+      setPreviousSummary(null);
+      setEvents([]);
+      setMessage(e?.message || "Failed to load dashboard");
     } finally {
-      setClosing(false);
+      setBusy(false);
     }
   }
+
+  useEffect(() => {
+    if (!orgId || !startDate || !endDate) return;
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgId, startDate, endDate]);
+
+  const insights = useMemo(() => {
+    const totalHours = rows.reduce((sum, row) => sum + Number(row.hours_worked || 0), 0);
+    const approvedHours = rows.filter((row) => row.status === "approved").reduce((sum, row) => sum + Number(row.hours_worked || 0), 0);
+    const submittedHours = rows.filter((row) => row.status === "submitted").reduce((sum, row) => sum + Number(row.hours_worked || 0), 0);
+    const pendingApprovals = rows.filter((row) => row.status === "submitted").length;
+    const missingSubmissions = contractors.filter((contractor) => !rows.some((row) => row.user_id === contractor.id)).length;
+    const previousHours = previousRows.reduce((sum, row) => sum + Number(row.hours_worked || 0), 0);
+    const currentPayroll = Number(summary?.total_amount ?? rows.filter((row) => row.status === "approved").reduce((sum, row) => sum + Number(row.hours_worked || 0) * Number(row.hourly_rate_snapshot || 0), 0));
+    const previousPayroll = Number(previousSummary?.total_amount ?? previousRows.filter((row) => row.status === "approved").reduce((sum, row) => sum + Number(row.hours_worked || 0) * Number(row.hourly_rate_snapshot || 0), 0));
+
+    const projectMap = new Map<string, { id: string; name: string; hours: number; cost: number; people: Set<string>; pending: number }>();
+    for (const row of rows) {
+      const key = row.project_id || row.project_name || "unassigned";
+      const existing = projectMap.get(key) || { id: key, name: row.project_name || "Unassigned", hours: 0, cost: 0, people: new Set<string>(), pending: 0 };
+      existing.hours += Number(row.hours_worked || 0);
+      existing.cost += Number(row.hours_worked || 0) * Number(row.hourly_rate_snapshot || 0);
+      existing.people.add(row.user_id);
+      if (row.status === "submitted") existing.pending += 1;
+      projectMap.set(key, existing);
+    }
+
+    const topProjects = Array.from(projectMap.values())
+      .map((project) => ({ ...project, peopleCount: project.people.size }))
+      .sort((a, b) => b.cost - a.cost)
+      .slice(0, 5);
+
+    const peopleNeedingRates = contractors.filter((contractor) => !Number(contractor.hourly_rate || 0)).length;
+    const approvalsReadyPct = totalHours ? (approvedHours / totalHours) * 100 : 0;
+
+    return {
+      totalHours,
+      approvedHours,
+      submittedHours,
+      pendingApprovals,
+      missingSubmissions,
+      currentPayroll,
+      previousPayroll,
+      payrollChange: pctChange(currentPayroll, previousPayroll),
+      hoursChange: pctChange(totalHours, previousHours),
+      topProjects,
+      peopleNeedingRates,
+      approvalsReadyPct,
+    };
+  }, [rows, previousRows, contractors, summary, previousSummary]);
 
   async function previewClose() {
     try {
       setPreviewBusy(true);
-      setMsg("");
+      setMessage("");
       const res = await apiJson<{ ok: true; blocked: boolean; totals: any; rows: any[] }>("/api/pay-period/preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -252,145 +257,257 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
       });
       setBlockers(res.rows || []);
       setBlockerTotals(res.totals || null);
-      setMsg((res.rows || []).length === 0 ? "Ready to close. No blockers found." : `Blocked: ${(res.totals?.entries ?? 0)} entries need approval before closing.`);
+      setMessage((res.rows || []).length === 0 ? "Ready to close. No blockers found." : `Blocked: ${(res.totals?.entries ?? 0)} entries need approval before closing.`);
     } catch (e: any) {
-      setMsg(e?.message || "Failed to preview close");
+      setMessage(e?.message || "Failed to preview close");
     } finally {
       setPreviewBusy(false);
     }
   }
 
+  async function closePayroll() {
+    setClosing(true);
+    setMessage("");
+    try {
+      const r = await apiJson<{ ok: boolean; error?: string }>("/api/pay-period/lock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ period_start: startDate, period_end: endDate }),
+      });
+      if (!r.ok) throw new Error(r.error || "Unable to close payroll");
+      router.push(`/reports/payroll?start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}&preset=${encodeURIComponent(preset)}&locked=1`);
+    } catch (e: any) {
+      setMessage(e?.message || "Failed to close payroll");
+    } finally {
+      setClosing(false);
+    }
+  }
+
+  const metrics = [
+    { label: "Active contractors", value: String(Number(summary?.active_contractors ?? contractors.length)), hint: `${insights.missingSubmissions} missing submissions` },
+    { label: "Hours this period", value: insights.totalHours.toFixed(2), hint: `${insights.hoursChange >= 0 ? "+" : ""}${insights.hoursChange.toFixed(1)}% vs prior range` },
+    { label: "Payroll this period", value: money(insights.currentPayroll), hint: `${insights.payrollChange >= 0 ? "+" : ""}${insights.payrollChange.toFixed(1)}% vs prior range` },
+    { label: "Pending approvals", value: String(insights.pendingApprovals), hint: `${insights.submittedHours.toFixed(2)} hrs awaiting review` },
+    { label: "Projects active", value: String(insights.topProjects.length), hint: `${events.length} export events this range` },
+  ];
+
+  if (!busy && rows.length === 0 && !message) {
+    return (
+      <div className="setuDashboardWrap">
+        <div className="setuWorkspaceHero">
+          <div>
+            <div className="setuWorkspaceEyebrow">Connect · Grow · Track</div>
+            <h2 className="setuWorkspaceTitle">Command Center</h2>
+            <p className="setuWorkspaceCopy">Use one surface to review approvals, payroll readiness, project labor cost, and recent operating events.</p>
+          </div>
+          <DateRangeToolbar
+            preset={preset}
+            start={startDate}
+            end={endDate}
+            onPresetChange={setPreset}
+            onStartChange={(value) => { setPreset("custom"); setStartDate(value); }}
+            onEndChange={(value) => { setPreset("custom"); setEndDate(value); }}
+            onRefresh={() => void load()}
+            busy={busy}
+          />
+        </div>
+        <div className="card cardPad">
+          <EmptyState title="No activity in this period" description="Try a broader date range or send contractors to My Work to start logging time." action={<button className="btnPrimary" onClick={() => router.push("/timesheet")}>Open My Work</button>} />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <>
-      {msg ? (
+    <div className="setuDashboardWrap">
+      {message ? (
         <div className="alert alertInfo">
-          <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>{msg}</pre>
+          <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>{message}</pre>
         </div>
       ) : null}
 
-      <div className="setuCompareGrid">
-        <div className="setuCompareCard setuCompareCardPrimary">
-          <div className="setuCompareLabel">Current month payroll</div>
-          <div className="setuCompareValue">${money(currentPayroll)}</div>
-          <div className="setuCompareMeta">{monthLabel(currentMonthRange.start)} • {currentHours.toFixed(2)} hrs</div>
+      <div className="setuWorkspaceHero">
+        <div>
+          <div className="setuWorkspaceEyebrow">Connect · Grow · Track</div>
+          <h2 className="setuWorkspaceTitle">Command Center</h2>
+          <p className="setuWorkspaceCopy">Operational status, payroll readiness, and project labor intelligence aligned to {presetLabel(preset, startDate, endDate).toLowerCase()}.</p>
         </div>
-        <div className="setuCompareCard">
-          <div className="setuCompareLabel">Previous month payroll</div>
-          <div className="setuCompareValue">${money(previousPayroll)}</div>
-          <div className="setuCompareMeta">{monthLabel(previousMonthRange.start)} • {previousHours.toFixed(2)} hrs</div>
-        </div>
-        <div className="setuCompareCard">
-          <div className="setuCompareLabel">Payroll change</div>
-          <div className={`setuCompareValue ${payrollChange >= 0 ? "isPositive" : "isNegative"}`}>{payrollChange >= 0 ? "+" : ""}{payrollChange.toFixed(1)}%</div>
-          <div className="setuCompareMeta">Month over month payroll movement</div>
-        </div>
-        <div className="setuCompareCard">
-          <div className="setuCompareLabel">Hours change</div>
-          <div className={`setuCompareValue ${hoursChange >= 0 ? "isPositive" : "isNegative"}`}>{hoursChange >= 0 ? "+" : ""}{hoursChange.toFixed(1)}%</div>
-          <div className="setuCompareMeta">Current vs previous month hours</div>
+        <div className="setuWorkspaceActions">
+          <DateRangeToolbar
+            preset={preset}
+            start={startDate}
+            end={endDate}
+            onPresetChange={setPreset}
+            onStartChange={(value) => { setPreset("custom"); setStartDate(value); }}
+            onEndChange={(value) => { setPreset("custom"); setEndDate(value); }}
+            onRefresh={() => void load()}
+            busy={busy}
+            compact
+          />
+          <div className="setuHeaderActions">
+            <button className="pill" onClick={() => router.push(`/analytics?preset=${encodeURIComponent(preset)}&start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}`)}>Analytics</button>
+            <button className="pill" onClick={() => router.push(`/approvals?scope=all`)}>Review approvals</button>
+            <button className="btnPrimary" onClick={() => router.push(`/reports/payroll?preset=${encodeURIComponent(preset)}&start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}`)}>Open payroll report</button>
+          </div>
         </div>
       </div>
 
-      <MetricsRow>
-        <StatCard
-          label="Period"
-          value={monthLabel(startDate)}
-          hint={`${startDate} → ${endDate}`}
-          right={
-            <select className="pill" value={preset} onChange={(e) => setPreset(e.target.value as any)}>
-              <option value="current_month">Current month</option>
-              <option value="last_month">Last month</option>
-            </select>
-          }
-        />
-        <StatCard label="Approved cost" value={`$${money(Number(summary?.total_amount ?? approvedPay))}`} hint={`${Number(summary?.total_hours ?? approvedHours).toFixed(2)} hrs approved`} />
-        <StatCard label="Pending approvals" value={Number(summary?.pending_entries ?? pendingCount)} hint="Submitted entries" />
-        <StatCard label="Contractors" value={Number(summary?.active_contractors ?? contractors.length)} hint={busy ? "Loading…" : "Active in org"} />
-      </MetricsRow>
-
-      <CardPad className="dbPayCard" style={{ marginTop: 14 }}>
-        <div className="dbPayHeader">
-          <div>
-            <div className="dbPayTitle">Monthly close</div>
-            <div className="muted">Lock the period and generate a reproducible payroll snapshot.</div>
-            {summary?.payroll_state && summary.payroll_state !== "open" ? (
-              <div className="muted" style={{ marginTop: 6 }}>
-                Current state: <b>{String(summary.payroll_state)}</b>{summary?.closed_at ? ` • ${new Date(summary.closed_at).toLocaleString()}` : ""}
-              </div>
-            ) : null}
+      <div className="setuKpiGrid">
+        {metrics.map((metric) => (
+          <div className="setuMetricCard" key={metric.label}>
+            <div className="setuMetricLabel">{metric.label}</div>
+            <div className="setuMetricValue">{metric.value}</div>
+            <div className="setuMetricHint">{metric.hint}</div>
           </div>
-          {periodLocked ? (
-            <div style={{ textAlign: "right", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-              <StatusChip state="locked" />
-              <div className="muted" style={{ fontSize: 12 }}>{lockedAt ? new Date(lockedAt).toLocaleString() : ""}</div>
-            </div>
-          ) : (
-            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" }}>
-              <button className="pill" disabled={previewBusy} onClick={previewClose}>{previewBusy ? "Checking…" : "Preview close"}</button>
-              <button className="btnPrimary" disabled={closing} onClick={closePayroll}>{closing ? "Closing…" : "Close payroll"}</button>
-            </div>
-          )}
-        </div>
+        ))}
+      </div>
 
-        {periodLocked ? (
-          <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button className="pill" onClick={() => router.push(`/reports/payroll?start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}&locked=1`)}>View payroll report</button>
-            <button className="pill" onClick={() => router.push("/reports/payroll-runs")}>Open payroll runs</button>
+      <div className="setuCommandGrid">
+        <section className="setuSurfaceCard">
+          <div className="setuSectionLead">
+            <div>
+              <div className="setuSectionTitle">Payroll readiness</div>
+              <div className="setuSectionHint">Know whether this period is ready to close and what still needs attention.</div>
+            </div>
+            {periodLocked ? <StatusChip state="locked" /> : <StatusChip state={insights.pendingApprovals === 0 ? "approved" : "submitted"} />}
           </div>
-        ) : (
-          <div style={{ marginTop: 10 }}>
-            <div className="muted">Tip: close only when all entries in this period are approved.</div>
-            {blockers && blockers.length > 0 ? (
-              <div style={{ marginTop: 10 }}>
-                <div style={{ fontWeight: 700, marginBottom: 6 }}>Blockers</div>
-                <div className="muted" style={{ marginBottom: 10 }}>{blockerTotals ? `${blockerTotals.entries} entries • ${blockerTotals.hours.toFixed(2)} hrs • $${money(blockerTotals.amount)}` : ""}</div>
-                <div style={{ overflowX: "auto" }}>
-                  <table className="table" style={{ width: "100%" }}>
-                    <thead>
-                      <tr>
-                        <th>Contractor</th>
-                        <th>Status</th>
-                        <th>Entries</th>
-                        <th>Hours</th>
-                        <th>Value</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {blockers.map((b, idx) => (
-                        <tr key={idx}>
-                          <td>{b.contractor_name}</td>
-                          <td>{b.status}</td>
-                          <td>{b.entries_count}</td>
-                          <td>{Number(b.hours || 0).toFixed(2)}</td>
-                          <td>${money(Number(b.amount || 0))}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+          <div className="setuReadinessList">
+            <div className="setuReadinessRow"><span>Approved hours</span><strong>{insights.approvedHours.toFixed(2)}</strong></div>
+            <div className="setuReadinessRow"><span>Awaiting approvals</span><strong>{insights.submittedHours.toFixed(2)} hrs</strong></div>
+            <div className="setuReadinessRow"><span>Last payroll state</span><strong>{summary?.payroll_state || "open"}</strong></div>
+            <div className="setuReadinessRow"><span>Current range</span><strong>{rangeLabel(startDate, endDate)}</strong></div>
+            {lockedAt ? <div className="setuReadinessRow"><span>Locked at</span><strong>{new Date(lockedAt).toLocaleString()}</strong></div> : null}
+          </div>
+          <div className="setuActionRow">
+            <button className="pill" onClick={previewClose} disabled={previewBusy}>{previewBusy ? "Checking…" : "Preview close"}</button>
+            {periodLocked ? (
+              <button className="btnPrimary" onClick={() => router.push(`/reports/payroll?start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}&locked=1`)}>View payroll report</button>
+            ) : (
+              <button className="btnPrimary" onClick={closePayroll} disabled={closing}>{closing ? "Closing…" : "Close payroll"}</button>
+            )}
+          </div>
+          {blockers && blockers.length > 0 ? (
+            <div className="setuMiniTable">
+              <div className="setuMiniTableHead">Blockers {blockerTotals ? `• ${blockerTotals.entries} entries` : ""}</div>
+              {blockers.slice(0, 4).map((b, idx) => (
+                <div className="setuMiniRow" key={idx}><span>{b.contractor_name}</span><strong>{Number(b.hours || 0).toFixed(2)} hrs</strong></div>
+              ))}
+            </div>
+          ) : null}
+        </section>
+
+        <section className="setuSurfaceCard">
+          <div className="setuSectionLead">
+            <div>
+              <div className="setuSectionTitle">Operational focus</div>
+              <div className="setuSectionHint">A manager-first queue for review, follow-up, and export completion.</div>
+            </div>
+          </div>
+          <div className="setuFocusList">
+            <button className="setuFocusItem" onClick={() => router.push("/approvals?scope=all")}><span>Approvals pending</span><strong>{insights.pendingApprovals}</strong></button>
+            <button className="setuFocusItem" onClick={() => router.push("/profiles")}><span>Missing timesheets</span><strong>{insights.missingSubmissions}</strong></button>
+            <button className="setuFocusItem" onClick={() => router.push("/profiles")}><span>Missing contractor rates</span><strong>{insights.peopleNeedingRates}</strong></button>
+            <button className="setuFocusItem" onClick={() => router.push(`/reports/payroll?start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}`)}><span>Exports / receipts</span><strong>{events.length}</strong></button>
+          </div>
+        </section>
+      </div>
+
+      <div className="setuCommandGrid setuCommandGridBottom">
+        <section className="setuSurfaceCard">
+          <div className="setuSectionLead">
+            <div>
+              <div className="setuSectionTitle">Financial snapshot</div>
+              <div className="setuSectionHint">Compare current labor spend to the prior range and review project concentration.</div>
+            </div>
+          </div>
+          <div className="setuTrendSummary">
+            <div className="setuTrendCard"><span>Current payroll</span><strong>{money(insights.currentPayroll)}</strong></div>
+            <div className="setuTrendCard"><span>Prior payroll</span><strong>{money(insights.previousPayroll)}</strong></div>
+            <div className="setuTrendCard"><span>Payroll variance</span><strong className={insights.payrollChange >= 0 ? "isPositive" : "isNegative"}>{insights.payrollChange >= 0 ? "+" : ""}{insights.payrollChange.toFixed(1)}%</strong></div>
+            <div className="setuTrendCard"><span>Approval coverage</span><strong>{insights.approvalsReadyPct.toFixed(0)}%</strong></div>
+          </div>
+          <div className="setuBarsList">
+            {insights.topProjects.map((project) => {
+              const width = insights.topProjects[0]?.cost ? Math.max(8, (project.cost / insights.topProjects[0].cost) * 100) : 8;
+              return (
+                <div className="setuBarBlock" key={project.id}>
+                  <div className="setuBarHead"><span>{project.name}</span><span>{money(project.cost)} • {project.hours.toFixed(2)} hrs</span></div>
+                  <div className="setuBarTrack"><div className="setuBarFill" style={{ width: `${width}%` }} /></div>
                 </div>
-              </div>
-            ) : null}
+              );
+            })}
           </div>
-        )}
-      </CardPad>
+        </section>
 
-      <SectionHeader title="Contractors" subtitle="Approved hours and cost for this period" right={<button className="pill" onClick={() => router.push("/admin/users")}>Manage people</button>} />
+        <section className="setuSurfaceCard">
+          <div className="setuSectionLead">
+            <div>
+              <div className="setuSectionTitle">Project health</div>
+              <div className="setuSectionHint">Top projects by labor cost for the selected range.</div>
+            </div>
+            <button className="pill" onClick={() => router.push("/projects")}>View projects</button>
+          </div>
+          <div className="setuProjectList">
+            {insights.topProjects.map((project) => (
+              <button className="setuProjectItem" key={project.id} onClick={() => router.push(`/reports/payroll?project_id=${encodeURIComponent(project.id)}&start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}`)}>
+                <div>
+                  <div className="setuProjectName">{project.name}</div>
+                  <div className="setuProjectMeta">{project.peopleCount} contractors • {project.pending} pending items</div>
+                </div>
+                <div className="setuProjectRight">
+                  <div>{money(project.cost)}</div>
+                  <div className="muted">{project.hours.toFixed(2)} hrs</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+      </div>
 
-      {contractorCards.length === 0 ? (
-        <EmptyState title="No contractors yet" description="Invite contractors to start tracking time and running payroll." action={<button className="btnPrimary" onClick={() => router.push("/admin")}>Go to Admin</button>} />
-      ) : (
-        <div className="dbQuickGrid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" } as any}>
-          {contractorCards.map((c) => (
-            <button key={c.id} className="dbQuickBtn" onClick={() => router.push(`/reports/payroll?start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}&contractor=${encodeURIComponent(c.id)}`)} style={{ textAlign: "left" } as any}>
-              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
-                <div style={{ fontWeight: 950 }}>{c.name}</div>
-                <div className={c.status === "Pending" ? "pill" : "muted"}>{c.status}</div>
+      <div className="setuCommandGrid setuCommandGridBottom">
+        <section className="setuSurfaceCard">
+          <div className="setuSectionLead">
+            <div>
+              <div className="setuSectionTitle">Recent activity</div>
+              <div className="setuSectionHint">Exports and payroll events connected to this command surface.</div>
+            </div>
+          </div>
+          <div className="setuActivityList">
+            {events.length ? events.map((event) => (
+              <div className="setuActivityItem" key={event.id}>
+                <div>
+                  <div className="setuActivityTitle">{event.export_type || "Export generated"}</div>
+                  <div className="setuActivityMeta">{event.actor_name_snapshot || "SETU TRACK"} • {event.file_format || "file"}</div>
+                </div>
+                <div className="muted">{new Date(event.created_at).toLocaleString()}</div>
               </div>
-              <span className="muted">{c.hours.toFixed(2)} hrs • ${money(c.pay)}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </>
+            )) : (
+              <div className="muted">No export activity in this period yet.</div>
+            )}
+          </div>
+        </section>
+
+        <section className="setuSurfaceCard">
+          <div className="setuSectionLead">
+            <div>
+              <div className="setuSectionTitle">Recent payroll runs</div>
+              <div className="setuSectionHint">Use runs to explain cost movement and export history.</div>
+            </div>
+            <button className="pill" onClick={() => router.push("/reports/payroll-runs")}>Payroll runs</button>
+          </div>
+          <div className="setuActivityList">
+            {payrollRuns.map((run) => (
+              <div className="setuActivityItem" key={run.id}>
+                <div>
+                  <div className="setuActivityTitle">{run.period_start} → {run.period_end}</div>
+                  <div className="setuActivityMeta">{run.status || "open"} • {Number(run.total_hours || 0).toFixed(2)} hrs</div>
+                </div>
+                <div>{money(Number(run.total_amount || 0))}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+    </div>
   );
 }

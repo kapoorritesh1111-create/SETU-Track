@@ -24,7 +24,7 @@ export async function GET(req: Request) {
       company_name: "",
       legal_name: "",
       logo_url: null,
-      accent_color: "blue",
+      accent_color: "#22C7BE",
       invoice_header_json: {},
       invoice_footer_text: "",
       default_currency: "USD",

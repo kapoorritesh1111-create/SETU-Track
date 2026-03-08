@@ -6,7 +6,7 @@ html, body { min-height: 100%; }
 html { background: var(--setu-bg); }
 body {
   margin: 0;
-  background: linear-gradient(180deg, #eef3fb 0%, var(--setu-bg) 120px, var(--setu-bg) 100%);
+  background: linear-gradient(180deg, #eef8fb 0%, var(--setu-bg) 140px, var(--setu-bg) 100%);
   color: var(--setu-text);
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -101,13 +101,13 @@ p { margin: 0; }
   text-align: left; border: 0; border-radius: 12px; background: transparent; color: var(--setu-text);
 }
 .mwMenuItem:hover { background: rgba(36,59,107,0.06); }
-.mwMenuItemActive { background: rgba(244,122,31,0.12); color: var(--setu-indigo-700); }
+.mwMenuItemActive { background: var(--primary-soft); color: var(--setu-indigo-800); }
 .mwDanger { color: var(--setu-danger); }
 .mwInlineIconLabel { display: inline-flex; align-items: center; gap: 10px; }
 
 .mwSidebar {
   position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w); z-index: 50;
-  padding: 18px 14px; background: linear-gradient(180deg, var(--setu-indigo-700) 0%, var(--setu-indigo-800) 100%);
+  padding: 18px 14px; background: linear-gradient(180deg, #0B2458 0%, #0A1840 100%);
   color: #fff; border-right: 1px solid rgba(255,255,255,0.08);
   display: flex; flex-direction: column; gap: 16px;
 }
@@ -123,13 +123,13 @@ p { margin: 0; }
   color: rgba(255,255,255,0.96); display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 15px;
 }
 .mwSideItem:hover { background: rgba(255,255,255,0.09); }
-.mwSideItemActive { background: var(--setu-saffron-600); color: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); }
+.mwSideItemActive { background: linear-gradient(135deg, var(--setu-indigo-700), var(--setu-teal-500)); color: #fff; box-shadow: 0 10px 24px rgba(17,59,134,0.24); }
 .mwSideItemIcon, .mwOrgBadgeIcon { display: inline-flex; align-items: center; justify-content: center; }
 
 .mwDrawerOverlay { position: fixed; inset: 0; z-index: 90; background: rgba(15,26,46,0.42); display: none; }
 .mwDrawer {
   width: min(88vw, 320px); height: 100%; padding: 16px 14px 20px; overflow-y: auto;
-  background: linear-gradient(180deg, var(--setu-indigo-700) 0%, var(--setu-indigo-800) 100%); color: #fff;
+  background: linear-gradient(180deg, #0B2458 0%, #0A1840 100%); color: #fff;
   box-shadow: 24px 0 48px rgba(0,0,0,0.22);
 }
 .mwDrawerHeader { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
@@ -246,7 +246,7 @@ p { margin: 0; }
 .setuMetricValue { margin-top: 8px; font-size: 18px; font-weight: 900; color: var(--setu-indigo-900); }
 .setuMetricHint { margin-top: 6px; color: var(--setu-muted); font-size: 12px; }
 .setuInsightGrid { display: grid; grid-template-columns: minmax(0,1.25fr) minmax(320px,.95fr); gap: 18px; }
-.setuSectionEyebrow { display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; border-radius: 999px; background: rgba(244,122,31,0.14); color: #b45309; font-size: 12px; font-weight: 800; }
+.setuSectionEyebrow { display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; border-radius: 999px; background: rgba(34,199,190,0.14); color: var(--setu-teal-500); font-size: 12px; font-weight: 800; }
 .setuSectionTitle { font-size: 22px; font-weight: 900; color: var(--setu-indigo-900); }
 .setuSectionHint { margin-top: 4px; color: var(--setu-muted); font-size: 13px; }
 .setuContentGrid { display: grid; grid-template-columns: minmax(0,1.35fr) minmax(300px,.85fr); gap: 18px; align-items: start; }
@@ -254,7 +254,7 @@ p { margin: 0; }
 .setuSideStack, .setuDistributionList, .setuActivityList, .setuTrendBars { display: grid; gap: 12px; }
 .setuTrendRow, .setuDistributionItem, .setuActivityItem { display: grid; gap: 8px; }
 .setuTrendTrack { width: 100%; height: 10px; border-radius: 999px; background: rgba(36,59,107,0.08); overflow: hidden; }
-.setuTrendFill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--setu-indigo-700), var(--setu-saffron-600)); }
+.setuTrendFill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--setu-indigo-700), var(--setu-cyan-500)); }
 .setuRegisterTable td, .setuRegisterTable th { white-space: nowrap; }
 
 /* Responsiveness */
@@ -283,9 +283,9 @@ p { margin: 0; }
   display: grid;
   grid-template-columns: minmax(0, 1.12fr) minmax(360px, 460px);
   background:
-    radial-gradient(1000px 520px at 6% 8%, rgba(244, 122, 31, 0.12), transparent 56%),
-    radial-gradient(900px 520px at 80% 12%, rgba(36, 59, 107, 0.16), transparent 58%),
-    linear-gradient(180deg, #eef3fb 0%, #f5f7fc 100%);
+    radial-gradient(1000px 520px at 6% 8%, rgba(34, 199, 190, 0.16), transparent 56%),
+    radial-gradient(900px 520px at 80% 12%, rgba(15, 111, 179, 0.18), transparent 58%),
+    linear-gradient(180deg, #eef8fb 0%, #f3f7fb 100%);
 }
 .setuLoginHero {
   padding: 48px clamp(24px, 5vw, 72px);
@@ -313,7 +313,7 @@ p { margin: 0; }
 .setuLoginPanelHeader p { margin-top: 8px; color: var(--setu-muted); line-height: 1.55; }
 .setuLoginMiniBadge {
   display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; border-radius: 999px;
-  background: rgba(244,122,31,.12); color: var(--setu-saffron-600); font-weight: 900; font-size: 11px; letter-spacing: .06em;
+  background: rgba(34,199,190,.12); color: var(--setu-teal-500); font-weight: 900; font-size: 11px; letter-spacing: .06em;
 }
 .setuLoginForm { margin-top: 22px; display: grid; gap: 16px; }
 .setuLoginField { display: grid; gap: 8px; }
@@ -334,7 +334,7 @@ p { margin: 0; }
 .setuCompareCard {
   padding: 18px 20px; border-radius: 22px; border: 1px solid var(--setu-border); background: rgba(255,255,255,.94); box-shadow: 0 10px 28px rgba(15,26,46,.06);
 }
-.setuCompareCardPrimary { background: linear-gradient(135deg, rgba(36,59,107,.98), rgba(22,36,71,.98)); color: #fff; border-color: transparent; }
+.setuCompareCardPrimary { background: linear-gradient(135deg, rgba(11,36,88,.98), rgba(15,111,179,.94)); color: #fff; border-color: transparent; }
 .setuCompareCardPrimary .setuCompareLabel, .setuCompareCardPrimary .setuCompareMeta { color: rgba(255,255,255,.78); }
 .setuCompareLabel { font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; color: var(--setu-muted); }
 .setuCompareValue { margin-top: 10px; font-size: clamp(1.55rem, 2.2vw, 2.4rem); font-weight: 950; letter-spacing: -.04em; }
@@ -355,7 +355,7 @@ p { margin: 0; }
 
 /* Receipt drawer */
 .setuReceiptHero {
-  padding: 18px 20px; border-radius: 22px; background: linear-gradient(135deg, rgba(36,59,107,.98), rgba(22,36,71,.98)); color: #fff;
+  padding: 18px 20px; border-radius: 22px; background: linear-gradient(135deg, rgba(11,36,88,.98), rgba(15,111,179,.94)); color: #fff;
 }
 .setuReceiptHero .muted { color: rgba(255,255,255,.78); }
 .setuMetaGrid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
@@ -472,8 +472,8 @@ textarea.nativeControl {
   gap: 8px;
 }
 .mwDrawerTabActive {
-  background: rgba(244,122,31,0.12);
-  border-color: rgba(244,122,31,0.2);
+  background: rgba(34,199,190,0.12);
+  border-color: rgba(34,199,190,0.2);
   color: #9a4d0f;
 }
 .mwDrawerTabCount {
@@ -874,3 +874,349 @@ textarea.nativeControl {
 .payRunSummaryValue { margin-top: 6px; font-weight: 900; color: var(--setu-indigo-900); }
 @media (max-width: 900px) { .payRunSummaryGrid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 640px) { .payRunSummaryGrid { grid-template-columns: 1fr; } }
+
+
+/* Analytics */
+.analyticsPage { display: grid; gap: 18px; }
+.analyticsFilterBar, .analyticsHero, .analyticsPanel {
+  background: var(--setu-surface);
+  border: 1px solid var(--setu-border);
+  border-radius: 22px;
+  box-shadow: 0 10px 24px rgba(11,36,88,0.05);
+  padding: 18px;
+}
+.analyticsFilterRow { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+.analyticsKpis, .analyticsSplit { display: grid; gap: 16px; }
+.analyticsKpis { grid-template-columns: repeat(4, minmax(0,1fr)); }
+.analyticsSplit { grid-template-columns: minmax(0, 1.25fr) minmax(320px, .95fr); }
+.analyticsBars, .analyticsList { display: grid; gap: 12px; }
+.analyticsBarItem { display: grid; gap: 8px; }
+.analyticsBarHead { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; font-weight: 700; }
+.analyticsBarTrack { width: 100%; height: 10px; border-radius: 999px; background: rgba(15,111,179,0.08); overflow: hidden; }
+.analyticsBarFill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--setu-indigo-700), var(--setu-teal-500)); }
+.analyticsHeroTitle { font-size: 24px; font-weight: 950; letter-spacing: -0.03em; }
+.analyticsHeroText { margin-top: 8px; color: var(--setu-muted); line-height: 1.6; }
+.analyticsHeroTagline { display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; border-radius: 999px; background: rgba(34,199,190,0.12); color: var(--setu-teal-500); font-size: 12px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+.analyticsDeltaPositive { color: var(--setu-success); }
+.analyticsDeltaNegative { color: var(--setu-danger); }
+@media (max-width: 1100px) { .analyticsKpis, .analyticsSplit { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 820px) { .analyticsKpis, .analyticsSplit { grid-template-columns: 1fr; } .analyticsFilterRow { align-items: stretch; } }
+
+.mwHeaderBrand { display: inline-flex; align-items: center; gap: 12px; }
+.mwHeaderBrandMark { width: 42px; height: 42px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; background: rgba(34,199,190,0.12); border: 1px solid rgba(34,199,190,0.18); }
+.mwHeaderBrandMark img { width: 26px; height: 26px; object-fit: contain; }
+.mwHeaderBrandText { display: grid; line-height: 1.05; }
+.mwHeaderBrandTitle { font-size: 14px; font-weight: 950; color: var(--setu-indigo-900); letter-spacing: .04em; }
+.mwHeaderBrandTag { font-size: 11px; color: var(--setu-muted); font-weight: 700; }
+.mwSidebarBrandHero { display: grid; gap: 12px; justify-items: start; }
+.mwSidebarBrandMark { width: 84px; height: 84px; border-radius: 22px; display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, rgba(34,199,190,0.12), rgba(45,203,231,0.08)); border: 1px solid rgba(255,255,255,0.08); }
+.mwSidebarKnot { width: 66px; height: 66px; object-fit: contain; }
+.mwSidebarBrandCopy { display: grid; gap: 6px; }
+.mwSidebarEyebrow { display: none; }
+.mwSidebarBrandWordmark { width: 168px; height: auto; object-fit: contain; filter: drop-shadow(0 8px 18px rgba(0,0,0,0.18)); }
+.mwSidebarBrandTitle { font-size: 13px; font-weight: 950; letter-spacing: .14em; color: rgba(255,255,255,0.96); }
+.mwSidebarBrandCaption { font-size: 12px; color: rgba(214,230,255,0.8); }
+
+/* Command center / range toolbar */
+.setuRangeToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+}
+.setuRangeToolbar.isCompact {
+  justify-content: flex-end;
+}
+.setuDashboardWrap {
+  display: grid;
+  gap: 18px;
+}
+.setuWorkspaceHero,
+.setuSurfaceCard {
+  background: var(--setu-surface);
+  border: 1px solid var(--setu-border);
+  border-radius: 24px;
+  box-shadow: 0 12px 32px rgba(11,36,88,0.06);
+}
+.setuWorkspaceHero {
+  padding: 22px;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+}
+.setuWorkspaceEyebrow {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(34,199,190,0.12);
+  color: var(--setu-teal-500);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.setuWorkspaceTitle {
+  margin: 10px 0 0;
+  font-size: 30px;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  color: var(--setu-indigo-900);
+}
+.setuWorkspaceCopy {
+  margin: 10px 0 0;
+  max-width: 760px;
+  color: var(--setu-muted);
+  line-height: 1.65;
+}
+.setuWorkspaceActions {
+  display: grid;
+  gap: 12px;
+  justify-items: end;
+}
+.setuKpiGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+}
+.setuCommandGrid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1.08fr) minmax(360px, .92fr);
+}
+.setuCommandGridBottom {
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, .85fr);
+}
+.setuSurfaceCard {
+  padding: 20px;
+  display: grid;
+  gap: 16px;
+}
+.setuSectionLead {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+}
+.setuSectionTitle {
+  font-size: 22px;
+  font-weight: 950;
+  letter-spacing: -0.03em;
+  color: var(--setu-indigo-900);
+}
+.setuSectionHint {
+  margin-top: 6px;
+  color: var(--setu-muted);
+  line-height: 1.55;
+}
+.setuReadinessList,
+.setuBarsList,
+.setuProjectList,
+.setuActivityList,
+.setuFocusList {
+  display: grid;
+  gap: 12px;
+}
+.setuReadinessRow,
+.setuMiniRow,
+.setuActivityItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+.setuReadinessRow {
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--setu-border);
+  background: rgba(36,59,107,0.03);
+}
+.setuActionRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.setuMiniTable {
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid var(--setu-border);
+  background: rgba(36,59,107,0.03);
+  display: grid;
+  gap: 8px;
+}
+.setuMiniTableHead {
+  font-weight: 900;
+  color: var(--setu-indigo-900);
+}
+.setuFocusItem,
+.setuProjectItem {
+  border: 1px solid var(--setu-border);
+  background: rgba(36,59,107,0.03);
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  text-align: left;
+  color: inherit;
+}
+.setuFocusItem:hover,
+.setuProjectItem:hover {
+  border-color: rgba(36,59,107,0.22);
+  transform: translateY(-1px);
+}
+.setuTrendSummary {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+}
+.setuTrendCard {
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--setu-border);
+  background: rgba(36,59,107,0.03);
+  display: grid;
+  gap: 8px;
+}
+.setuTrendCard span,
+.setuProjectMeta,
+.setuActivityMeta {
+  color: var(--setu-muted);
+  font-size: 12px;
+}
+.setuProjectName,
+.setuActivityTitle {
+  font-weight: 900;
+  color: var(--setu-indigo-900);
+}
+.setuProjectRight {
+  text-align: right;
+}
+.setuBarBlock {
+  display: grid;
+  gap: 8px;
+}
+.setuBarHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.setuBarTrack {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(15,111,179,0.08);
+}
+.setuBarFill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--setu-indigo-700), var(--setu-teal-500));
+}
+.setuQueueSummary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+@media (max-width: 1180px) {
+  .setuKpiGrid,
+  .setuTrendSummary,
+  .setuQueueSummary {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+  .setuCommandGrid,
+  .setuCommandGridBottom {
+    grid-template-columns: 1fr;
+  }
+  .setuWorkspaceHero {
+    flex-direction: column;
+  }
+  .setuWorkspaceActions {
+    width: 100%;
+    justify-items: stretch;
+  }
+}
+@media (max-width: 720px) {
+  .setuKpiGrid,
+  .setuTrendSummary,
+  .setuQueueSummary {
+    grid-template-columns: 1fr;
+  }
+  .setuRangeToolbar,
+  .setuRangeToolbar.isCompact {
+    justify-content: stretch;
+  }
+  .setuRangeToolbar > * {
+    width: 100%;
+  }
+  .setuSectionLead,
+  .setuActivityItem,
+  .setuProjectItem,
+  .setuReadinessRow,
+  .setuFocusItem {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* Phase 2C command center */
+.setuDashboardWrap { display: grid; gap: 18px; }
+.setuWorkspaceHero {
+  display: grid;
+  grid-template-columns: minmax(0,1.15fr) minmax(320px,.95fr);
+  gap: 18px;
+  padding: 22px;
+  border-radius: 26px;
+  border: 1px solid var(--setu-border);
+  background: linear-gradient(135deg, rgba(11,46,74,0.98), rgba(31,95,175,0.94));
+  color: #fff;
+  box-shadow: 0 18px 42px rgba(11,36,88,0.18);
+}
+.setuWorkspaceEyebrow { display: inline-flex; min-height: 28px; align-items: center; padding: 0 10px; border-radius: 999px; background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.88); font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.setuWorkspaceTitle { margin: 12px 0 0; font-size: clamp(1.7rem, 2vw, 2.6rem); font-weight: 950; letter-spacing: -.05em; }
+.setuWorkspaceCopy { margin: 10px 0 0; max-width: 62ch; color: rgba(255,255,255,0.8); line-height: 1.65; }
+.setuWorkspaceActions { display: grid; gap: 12px; align-content: start; }
+.setuRangeToolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
+.setuRangeToolbar.isCompact .setuField { min-width: 160px; }
+.setuRangeToolbar .setuField span { color: rgba(255,255,255,0.8); }
+.setuRangeToolbar .input { background: rgba(255,255,255,0.96); }
+.setuKpiGrid { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 12px; }
+.setuSurfaceCard { background: var(--setu-surface); border: 1px solid var(--setu-border); border-radius: 24px; box-shadow: 0 10px 28px rgba(15,26,46,0.05); padding: 18px; display: grid; gap: 14px; }
+.setuSectionLead { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.setuReadinessList, .setuFocusList, .setuBarsList, .setuProjectList, .setuActivityList { display: grid; gap: 12px; }
+.setuReadinessRow, .setuActivityItem { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.setuReadinessRow { padding: 12px 14px; border-radius: 16px; background: rgba(36,59,107,0.04); border: 1px solid rgba(36,59,107,0.08); }
+.setuMiniTable { display: grid; gap: 8px; padding-top: 4px; }
+.setuMiniTableHead { font-size: 12px; font-weight: 900; color: var(--setu-muted); text-transform: uppercase; letter-spacing: .06em; }
+.setuMiniRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--setu-border); }
+.setuFocusItem, .setuProjectItem {
+  width: 100%; border: 1px solid var(--setu-border); background: rgba(255,255,255,0.78); color: var(--setu-text);
+  border-radius: 18px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 14px; text-align: left;
+}
+.setuFocusItem span, .setuProjectMeta, .setuActivityMeta { color: var(--setu-muted); font-size: 12px; }
+.setuTrendSummary { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+.setuTrendCard { padding: 14px 16px; border-radius: 18px; background: rgba(36,59,107,0.04); border: 1px solid rgba(36,59,107,0.08); display: grid; gap: 6px; }
+.setuTrendCard span { color: var(--setu-muted); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+.setuTrendCard strong { font-size: 18px; font-weight: 950; color: var(--setu-indigo-900); }
+.setuTrendCard strong.isPositive { color: #15803d; }
+.setuTrendCard strong.isNegative { color: #b42318; }
+.setuBarBlock { display: grid; gap: 8px; }
+.setuBarHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; font-weight: 800; }
+.setuBarTrack { width: 100%; height: 10px; border-radius: 999px; background: rgba(15,111,179,0.08); overflow: hidden; }
+.setuBarFill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--setu-indigo-700), var(--setu-teal-500)); }
+.setuProjectName, .setuActivityTitle { font-weight: 900; color: var(--setu-indigo-900); }
+.setuProjectRight { text-align: right; }
+@media (max-width: 1120px) {
+  .setuWorkspaceHero, .setuKpiGrid, .setuCommandGrid, .setuTrendSummary { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 860px) {
+  .setuWorkspaceHero, .setuKpiGrid, .setuCommandGrid, .setuTrendSummary { grid-template-columns: 1fr; }
+  .setuSectionLead, .setuReadinessRow, .setuActivityItem, .setuFocusItem, .setuProjectItem, .setuBarHead { align-items: flex-start; flex-direction: column; }
+  .setuProjectRight { text-align: left; }
+}

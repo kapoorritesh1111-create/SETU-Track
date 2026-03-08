@@ -20,6 +20,7 @@ import {
   FileText,
   CreditCard,
   Building2,
+  ChartColumnBig,
 } from "lucide-react";
 
 type Props = {
@@ -168,10 +169,11 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
             aria-label="Go to dashboard"
           >
             <span className="mwHeaderBrandMark">
-              <img src="/brand/setu-knot-icon.svg" alt="" aria-hidden="true" />
+              <img src="/brand/setu-track-symbol.png" alt="" aria-hidden="true" />
             </span>
             <span className="mwHeaderBrandText">
               <span className="mwHeaderBrandTitle">SETU TRACK</span>
+              <span className="mwHeaderBrandTag">Connect grow track</span>
             </span>
           </button>
         </div>
@@ -262,15 +264,15 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
             <span className="mwSidebarBrandMark">
               <img
                 className="mwSidebarKnot"
-                src="/brand/setu-knot-icon.svg"
+                src="/brand/setu-track-symbol.png"
                 alt=""
                 aria-hidden="true"
               />
             </span>
             <span className="mwSidebarBrandCopy">
-              <span className="mwSidebarEyebrow">SETU GROUP</span>
+              <img className="mwSidebarBrandWordmark" src="/brand/setu-track-logo.png" alt="SETU TRACK" />
               <span className="mwSidebarBrandTitle">SETU TRACK</span>
-              <span className="mwSidebarBrandCaption">Time, payroll, and export operations</span>
+              <span className="mwSidebarBrandCaption">Connect grow track</span>
             </span>
           </button>
 
@@ -308,7 +310,7 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
                 aria-label="Go to dashboard"
               >
                 <span className="mwSidebarBrandMark">
-                  <img className="mwSidebarKnot" src="/brand/setu-knot-icon.svg" alt="" aria-hidden="true" />
+                  <img className="mwSidebarKnot" src="/brand/setu-track-symbol.png" alt="" aria-hidden="true" />
                 </span>
                 <span className="mwSidebarBrandCopy">
                   <span className="mwSidebarEyebrow">SETU GROUP</span>

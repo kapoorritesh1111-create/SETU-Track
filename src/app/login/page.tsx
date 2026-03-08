@@ -68,12 +68,11 @@ export default function LoginPage() {
     <div className="setuLoginPage">
       <div className="setuLoginHero">
         <div className="setuLoginHeroInner">
-          <img src="/brand/setu-track-logo.svg" alt="SETU TRACK" className="setuLoginLogo" />
-          <div className="setuLoginEyebrow">Payroll command platform</div>
-          <h1>Branded payroll operations, approvals, and export control in one SETU workspace.</h1>
+          <img src="/brand/setu-track-logo.png" alt="SETU TRACK" className="setuLoginLogo" />
+          <div className="setuLoginEyebrow">Connect grow track</div>
+          <h1>Connect teams, grow delivery confidence, and track payroll operations in one SETU workspace.</h1>
           <p>
-            Keep project time, payroll runs, receipts, and finance-ready exports aligned across admins, managers,
-            and contractors.
+            Keep project time, payroll runs, analytics, receipts, and finance-ready exports aligned across admins, managers, and contractors.
           </p>
 
           <div className="setuLoginFeatureGrid">
