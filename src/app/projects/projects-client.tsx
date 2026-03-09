@@ -14,9 +14,12 @@ import Button from "../../components/ui/Button";
 import ActionMenu from "../../components/ui/ActionMenu";
 import SavedViews from "../../components/ui/SavedViews";
 import { Search } from "lucide-react";
+import DateRangeToolbar from "../../components/ui/DateRangeToolbar";
+import { presetLabel, presetToRange, type DatePreset } from "../../lib/dateRanges";
 
 type WeekStart = "sunday" | "monday";
 type ActiveFilter = "all" | "active" | "inactive";
+type HealthFilter = "all" | "budgeted" | "no_budget" | "within" | "near" | "over";
 
 type Project = {
   id: string;
@@ -71,17 +74,12 @@ function copyToClipboard(text: string) {
 }
 
 
-function monthRangeLabel() {
-  const now = new Date();
-  return now.toLocaleString("en-US", { month: "long", year: "numeric" });
-}
-
-function currentMonthRange() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  return { start: fmt(start), end: fmt(end) };
+function rangeLabel(start: string, end: string) {
+  const startDate = new Date(`${start}T00:00:00`);
+  const endDate = new Date(`${end}T00:00:00`);
+  const sameMonth = startDate.getFullYear() === endDate.getFullYear() && startDate.getMonth() === endDate.getMonth();
+  if (sameMonth) return startDate.toLocaleString("en-US", { month: "long", year: "numeric" });
+  return `${startDate.toLocaleString("en-US", { month: "short", day: "numeric" })} → ${endDate.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
 }
 
 function money(amount: number, currency = "USD") {
@@ -99,6 +97,25 @@ function budgetHealthLabel(variance: number, hasBudget: boolean) {
   return "Over budget";
 }
 
+function budgetHealthState(actualAmount: number, budgetAmount: number, actualHours: number, budgetHours: number): HealthFilter {
+  const hasBudget = budgetAmount > 0 || budgetHours > 0;
+  if (!hasBudget) return "no_budget";
+  const amountRatio = budgetAmount > 0 ? actualAmount / budgetAmount : 0;
+  const hoursRatio = budgetHours > 0 ? actualHours / budgetHours : 0;
+  const ratio = Math.max(amountRatio, hoursRatio);
+  if (ratio >= 1) return "over";
+  if (ratio >= 0.8) return "near";
+  return "within";
+}
+
+function budgetHealthCopy(state: HealthFilter) {
+  if (state === "over") return "Over budget";
+  if (state === "near") return "Near budget";
+  if (state === "within") return "Within budget";
+  if (state === "no_budget") return "No budget";
+  if (state === "budgeted") return "Budgeted";
+  return "All health";
+}
 
 export default function ProjectsClient() {
   const router = useRouter();
@@ -108,6 +125,10 @@ export default function ProjectsClient() {
   const selectedProjectId = useMemo(() => searchParams.get("project") || "", [searchParams]);
   const newParam = useMemo(() => searchParams.get("new") || "", [searchParams]);
   const manageUserId = useMemo(() => searchParams.get("user") || "", [searchParams]);
+  const initialPreset = useMemo(() => (searchParams.get("preset") as DatePreset) || "current_month", [searchParams]);
+  const initialRangeStart = useMemo(() => searchParams.get("rangeStart") || "", [searchParams]);
+  const initialRangeEnd = useMemo(() => searchParams.get("rangeEnd") || "", [searchParams]);
+  const initialHealthFilter = useMemo(() => (searchParams.get("healthFilter") as HealthFilter) || "all", [searchParams]);
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [fetchErr, setFetchErr] = useState<string>("");
@@ -167,13 +188,22 @@ function closeCreate() {
   // Filters
   const [q, setQ] = useState("");
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>("all");
+  const initialRange = initialPreset === "custom" && initialRangeStart && initialRangeEnd ? { start: initialRangeStart, end: initialRangeEnd } : presetToRange((initialPreset as Exclude<DatePreset, "custom">) || "current_month");
+  const [healthFilter, setHealthFilter] = useState<HealthFilter>(initialHealthFilter);
+  const [preset, setPreset] = useState<DatePreset>(initialPreset);
+  const [rangeStart, setRangeStart] = useState(initialRange.start);
+  const [rangeEnd, setRangeEnd] = useState(initialRange.end);
 
   // Phase 1.9: local saved-views scaffolding
-  const getViewState = () => ({ q, activeFilter });
+  const getViewState = () => ({ q, activeFilter, healthFilter, preset, rangeStart, rangeEnd });
   const applyViewState = (s: any) => {
     if (!s || typeof s !== "object") return;
     if (typeof s.q === "string") setQ(s.q);
     if (typeof s.activeFilter === "string") setActiveFilter(s.activeFilter);
+    if (typeof s.healthFilter === "string") setHealthFilter(s.healthFilter);
+    if (typeof s.preset === "string") setPreset(s.preset);
+    if (typeof s.rangeStart === "string") setRangeStart(s.rangeStart);
+    if (typeof s.rangeEnd === "string") setRangeEnd(s.rangeEnd);
   };
 
   // Drawer
@@ -191,6 +221,12 @@ function closeCreate() {
   const [memberPickId, setMemberPickId] = useState<string>("");
   const [memberActionBusy, setMemberActionBusy] = useState(false);
 
+  useEffect(() => {
+    if (preset === "custom") return;
+    const next = presetToRange(preset as Exclude<DatePreset, "custom">);
+    setRangeStart(next.start);
+    setRangeEnd(next.end);
+  }, [preset]);
 
   function pill(text: string, tone?: "success" | "warn" | "default") {
     return <Tag tone={tone ?? "default"}>{text}</Tag>;
@@ -248,13 +284,12 @@ function closeCreate() {
       return;
     }
 
-    const month = currentMonthRange();
     const { data, error } = await supabase
       .from("v_time_entries")
       .select("project_id, hours_worked, hourly_rate_snapshot, status, user_id")
       .eq("org_id", profile.org_id)
-      .gte("entry_date", month.start)
-      .lte("entry_date", month.end);
+      .gte("entry_date", rangeStart)
+      .lte("entry_date", rangeEnd);
 
     if (error) {
       setFetchErr(error.message);
@@ -392,7 +427,7 @@ function closeCreate() {
     }
     void loadProjectActuals(projects);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.org_id, projects]);
+  }, [profile?.org_id, projects, rangeStart, rangeEnd]);
 
 
   const assignedProjectIds = useMemo(() => {
@@ -408,10 +443,16 @@ function closeCreate() {
     return projects.filter((p) => {
       if (activeFilter === "active" && !p.is_active) return false;
       if (activeFilter === "inactive" && p.is_active) return false;
+      const actual = actualsMap[p.id] || { hours: 0, amount: 0, pending: 0 };
+      const budgetAmount = Number(p.budget_amount || 0);
+      const budgetHours = Number(p.budget_hours || 0);
+      const state = budgetHealthState(actual.amount, budgetAmount, actual.hours, budgetHours);
+      if (healthFilter === "budgeted" && !(budgetAmount > 0 || budgetHours > 0)) return false;
+      if (healthFilter !== "all" && healthFilter !== "budgeted" && state !== healthFilter) return false;
       if (!query) return true;
       return `${p.name} ${p.id}`.toLowerCase().includes(query);
     });
-  }, [projects, q, activeFilter]);
+  }, [projects, q, activeFilter, healthFilter, actualsMap]);
 
   const counts = useMemo(() => {
     let total = projects.length;
@@ -447,10 +488,13 @@ function closeCreate() {
       acc.actualHours += row.actualHours;
       acc.budgetAmount += row.budgetAmount;
       acc.actualAmount += row.actualAmount;
-      if (row.budgetAmount > 0) acc.budgetedProjects += 1;
-      if (row.budgetAmount > 0 && row.amountVariance > 0) acc.overBudgetProjects += 1;
+      const state = budgetHealthState(row.actualAmount, row.budgetAmount, row.actualHours, row.budgetHours);
+      if (row.budgetAmount > 0 || row.budgetHours > 0) acc.budgetedProjects += 1;
+      if (state === "over") acc.overBudgetProjects += 1;
+      if (state === "near") acc.nearBudgetProjects += 1;
+      if (state === "no_budget") acc.noBudgetProjects += 1;
       return acc;
-    }, { budgetHours: 0, actualHours: 0, budgetAmount: 0, actualAmount: 0, budgetedProjects: 0, overBudgetProjects: 0 });
+    }, { budgetHours: 0, actualHours: 0, budgetAmount: 0, actualAmount: 0, budgetedProjects: 0, overBudgetProjects: 0, nearBudgetProjects: 0, noBudgetProjects: 0 });
 
     return { rows, totals };
   }, [filteredProjects, actualsMap]);
@@ -886,23 +930,43 @@ function closeCreate() {
           <div className="setuMetricCard">
             <div className="setuMetricLabel">Budget coverage</div>
             <div className="setuMetricValue">{financeSummary.totals.budgetedProjects}</div>
-            <div className="setuMetricHint">Projects with an active labor budget in {monthRangeLabel()}.</div>
+            <div className="setuMetricHint">Projects with an active labor budget in {rangeLabel(rangeStart, rangeEnd)}.</div>
           </div>
           <div className="setuMetricCard">
             <div className="setuMetricLabel">Actual labor this month</div>
             <div className="setuMetricValue">{money(financeSummary.totals.actualAmount)}</div>
-            <div className="setuMetricHint">{financeSummary.totals.actualHours.toFixed(2)} hours logged this month.</div>
+            <div className="setuMetricHint">{financeSummary.totals.actualHours.toFixed(2)} hours logged in {presetLabel(preset, rangeStart, rangeEnd).toLowerCase()}.</div>
           </div>
           <div className="setuMetricCard">
             <div className="setuMetricLabel">Budget vs actual</div>
             <div className="setuMetricValue">{financeSummary.totals.budgetAmount > 0 ? money(financeSummary.totals.budgetAmount - financeSummary.totals.actualAmount) : "—"}</div>
-            <div className="setuMetricHint">{financeSummary.totals.budgetAmount > 0 ? `${financeSummary.totals.overBudgetProjects} project(s) over budget.` : "Add budgets to turn projects into a finance workspace."}</div>
+            <div className="setuMetricHint">{financeSummary.totals.budgetAmount > 0 || financeSummary.totals.budgetHours > 0 ? `${financeSummary.totals.overBudgetProjects} over budget • ${financeSummary.totals.nearBudgetProjects} near budget.` : "Add budgets to turn projects into a finance workspace."}</div>
           </div>
           <div className="setuMetricCard">
             <div className="setuMetricLabel">Hours vs plan</div>
             <div className="setuMetricValue">{financeSummary.totals.budgetHours > 0 ? `${financeSummary.totals.actualHours.toFixed(0)} / ${financeSummary.totals.budgetHours.toFixed(0)}` : `${financeSummary.totals.actualHours.toFixed(0)}`}</div>
             <div className="setuMetricHint">Use budget hours to compare planned vs actual utilization.</div>
           </div>
+        </div>
+
+        <div className="card cardPad" style={{ marginBottom: 14 }}>
+          <div className="setuCardHeaderRow" style={{ marginBottom: 12 }}>
+            <div>
+              <div className="setuSectionTitle" style={{ fontSize: 20 }}>Project finance controls</div>
+              <div className="setuSectionHint">Use one shared period to compare planned vs actual labor across Projects, Analytics, Dashboard, and Payroll.</div>
+            </div>
+            <div className="muted" style={{ fontSize: 12 }}>{rangeLabel(rangeStart, rangeEnd)}</div>
+          </div>
+          <DateRangeToolbar
+            preset={preset}
+            start={rangeStart}
+            end={rangeEnd}
+            onPresetChange={setPreset}
+            onStartChange={(value) => { setPreset("custom"); setRangeStart(value); }}
+            onEndChange={(value) => { setPreset("custom"); setRangeEnd(value); }}
+            onRefresh={() => { void loadProjectActuals(projects); }}
+            compact
+          />
         </div>
 
         <CommandBar
@@ -912,9 +976,9 @@ function closeCreate() {
               getState={getViewState}
               applyState={applyViewState}
               defaultViews={[
-                { id: "all", label: "All projects", state: { q: "", activeFilter: "all" } },
-                { id: "active", label: "Active", state: { q: "", activeFilter: "active" } },
-                { id: "inactive", label: "Inactive", state: { q: "", activeFilter: "inactive" } },
+                { id: "all", label: "All projects", state: { q: "", activeFilter: "all", healthFilter: "all" } },
+                { id: "active", label: "Active", state: { q: "", activeFilter: "active", healthFilter: "all" } },
+                { id: "over", label: "Over budget", state: { q: "", activeFilter: "all", healthFilter: "over" } },
               ]}
             />
           }
@@ -938,6 +1002,21 @@ function closeCreate() {
                   <option value="active">Active only</option>
                   <option value="inactive">Inactive only</option>
                 </select>
+                <select
+                  className="select"
+                  name="project_filter_health"
+                  aria-label="Project budget health filter"
+                  value={healthFilter}
+                  onChange={(e) => setHealthFilter(e.target.value as HealthFilter)}
+                  style={{ width: 190 }}
+                >
+                  <option value="all">All health</option>
+                  <option value="budgeted">Budgeted only</option>
+                  <option value="within">Within budget</option>
+                  <option value="near">Near budget</option>
+                  <option value="over">Over budget</option>
+                  <option value="no_budget">No budget</option>
+                </select>
 
                 <Button
                   type="button"
@@ -946,6 +1025,8 @@ function closeCreate() {
                   onClick={() => {
                     setQ("");
                     setActiveFilter("all");
+                    setHealthFilter("all");
+                    setPreset("current_month");
                   }}
                 >
                   Clear
@@ -1081,7 +1162,7 @@ function closeCreate() {
             },
             {
               key: "budget",
-              header: `Budget (${monthRangeLabel()})`,
+              header: `Budget (${rangeLabel(rangeStart, rangeEnd)})`,
               width: 190,
               cell: (p) => {
                 const hasBudget = Number(p.budget_amount || 0) > 0 || Number(p.budget_hours || 0) > 0;
@@ -1114,11 +1195,15 @@ function closeCreate() {
               cell: (p) => {
                 const actual = actualsMap[p.id] || { hours: 0, amount: 0, pending: 0 };
                 const budgetAmount = Number(p.budget_amount || 0);
+                const budgetHours = Number(p.budget_hours || 0);
                 const variance = budgetAmount > 0 ? actual.amount - budgetAmount : 0;
+                const state = budgetHealthState(actual.amount, budgetAmount, actual.hours, budgetHours);
+                const tone = state === "over" ? "warn" : state === "within" ? "success" : "default";
+                const detail = budgetAmount > 0 ? `${variance > 0 ? "+" : ""}${money(variance, p.budget_currency || "USD")}` : budgetHours > 0 ? `${(actual.hours - budgetHours).toFixed(2)} hrs vs plan` : "Add budget to compare";
                 return (
                   <div style={{ display: "grid", gap: 6 }}>
-                    <Tag tone={budgetHealthTone(variance, budgetAmount > 0)}>{budgetHealthLabel(variance, budgetAmount > 0)}</Tag>
-                    <div className="muted" style={{ fontSize: 12 }}>{budgetAmount > 0 ? `${variance > 0 ? "+" : ""}${money(variance, p.budget_currency || "USD")}` : "Add budget to compare"}</div>
+                    <Tag tone={tone}>{budgetHealthCopy(state)}</Tag>
+                    <div className="muted" style={{ fontSize: 12 }}>{detail}</div>
                   </div>
                 );
               },

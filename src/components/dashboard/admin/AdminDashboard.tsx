@@ -54,6 +54,14 @@ type PayrollRunLite = {
   status: string | null;
 };
 
+type ProjectBudgetLite = {
+  id: string;
+  name: string;
+  budget_amount: number | null;
+  budget_hours: number | null;
+  budget_currency: string | null;
+};
+
 function money(x: number) {
   return `USD ${x.toFixed(2)}`;
 }
@@ -82,6 +90,7 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
   const [previousSummary, setPreviousSummary] = useState<AdminSummary | null>(null);
   const [events, setEvents] = useState<ExportEvent[]>([]);
   const [payrollRuns, setPayrollRuns] = useState<PayrollRunLite[]>([]);
+  const [projectBudgets, setProjectBudgets] = useState<ProjectBudgetLite[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [periodLocked, setPeriodLocked] = useState(false);
@@ -142,6 +151,11 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
         .order("created_at", { ascending: false })
         .limit(6);
 
+      const budgetQuery = supabase
+        .from("projects")
+        .select("id,name,budget_amount,budget_hours,budget_currency")
+        .eq("org_id", orgId);
+
       const lockPromise = apiJson<{ ok: boolean; locked: boolean; locked_at: string | null }>(`/api/pay-period/status?${new URLSearchParams({ period_start: startDate, period_end: endDate }).toString()}`)
         .catch(() => ({ ok: true, locked: false, locked_at: null }));
 
@@ -153,6 +167,7 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
         { data: previousEntries, error: previousErr },
         { data: contractorRows, error: contractorErr },
         { data: runRows, error: runErr },
+        { data: budgetRows, error: budgetErr },
         selectedSummary,
         prevSummary,
         lockStatus,
@@ -168,14 +183,15 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
         exportPromise,
       ]);
 
-      if (currentErr || previousErr || contractorErr || runErr) {
-        throw new Error(currentErr?.message || previousErr?.message || contractorErr?.message || runErr?.message || "Failed to load dashboard");
+      if (currentErr || previousErr || contractorErr || runErr || budgetErr) {
+        throw new Error(currentErr?.message || previousErr?.message || contractorErr?.message || runErr?.message || budgetErr?.message || "Failed to load dashboard");
       }
 
       setRows((currentEntries || []) as VRow[]);
       setPreviousRows((previousEntries || []) as VRow[]);
       setContractors((contractorRows || []) as Contractor[]);
       setPayrollRuns((runRows || []) as PayrollRunLite[]);
+      setProjectBudgets((budgetRows || []) as ProjectBudgetLite[]);
       setSummary(selectedSummary);
       setPreviousSummary(prevSummary);
       setPeriodLocked(!!lockStatus.locked);
@@ -189,6 +205,7 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
       setSummary(null);
       setPreviousSummary(null);
       setEvents([]);
+      setProjectBudgets([]);
       setMessage(e?.message || "Failed to load dashboard");
     } finally {
       setBusy(false);
@@ -211,14 +228,20 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
     const currentPayroll = Number(summary?.total_amount ?? rows.filter((row) => row.status === "approved").reduce((sum, row) => sum + Number(row.hours_worked || 0) * Number(row.hourly_rate_snapshot || 0), 0));
     const previousPayroll = Number(previousSummary?.total_amount ?? previousRows.filter((row) => row.status === "approved").reduce((sum, row) => sum + Number(row.hours_worked || 0) * Number(row.hourly_rate_snapshot || 0), 0));
 
-    const projectMap = new Map<string, { id: string; name: string; hours: number; cost: number; people: Set<string>; pending: number }>();
+    const projectBudgetMap = new Map(projectBudgets.map((project) => [project.id, project]));
+    const projectMap = new Map<string, { id: string; name: string; hours: number; cost: number; people: Set<string>; pending: number; budgetAmount: number; budgetHours: number; currency: string; health: "no_budget" | "within" | "near" | "over" }>();
     for (const row of rows) {
       const key = row.project_id || row.project_name || "unassigned";
-      const existing = projectMap.get(key) || { id: key, name: row.project_name || "Unassigned", hours: 0, cost: 0, people: new Set<string>(), pending: 0 };
+      const budget = row.project_id ? projectBudgetMap.get(row.project_id) : null;
+      const existing = projectMap.get(key) || { id: key, name: row.project_name || "Unassigned", hours: 0, cost: 0, people: new Set<string>(), pending: 0, budgetAmount: Number(budget?.budget_amount || 0), budgetHours: Number(budget?.budget_hours || 0), currency: budget?.budget_currency || "USD", health: "no_budget" as const };
       existing.hours += Number(row.hours_worked || 0);
       existing.cost += Number(row.hours_worked || 0) * Number(row.hourly_rate_snapshot || 0);
       existing.people.add(row.user_id);
       if (row.status === "submitted") existing.pending += 1;
+      const amountRatio = existing.budgetAmount > 0 ? existing.cost / existing.budgetAmount : 0;
+      const hoursRatio = existing.budgetHours > 0 ? existing.hours / existing.budgetHours : 0;
+      const ratio = Math.max(amountRatio, hoursRatio);
+      existing.health = existing.budgetAmount <= 0 && existing.budgetHours <= 0 ? "no_budget" : ratio >= 1 ? "over" : ratio >= 0.8 ? "near" : "within";
       projectMap.set(key, existing);
     }
 
@@ -229,6 +252,12 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
 
     const peopleNeedingRates = contractors.filter((contractor) => !Number(contractor.hourly_rate || 0)).length;
     const approvalsReadyPct = totalHours ? (approvedHours / totalHours) * 100 : 0;
+    const totalProjects = projectMap.size;
+    const budgetedProjects = Array.from(projectMap.values()).filter((project) => project.budgetAmount > 0 || project.budgetHours > 0).length;
+    const overBudgetProjects = topProjects.filter((project) => project.health === "over").length;
+    const nearBudgetProjects = topProjects.filter((project) => project.health === "near").length;
+    const noBudgetProjects = topProjects.filter((project) => project.health === "no_budget").length;
+    const totalBudgetAmount = topProjects.reduce((sum, project) => sum + Number(project.budgetAmount || 0), 0);
 
     return {
       totalHours,
@@ -243,8 +272,14 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
       topProjects,
       peopleNeedingRates,
       approvalsReadyPct,
+      totalProjects,
+      budgetedProjects,
+      overBudgetProjects,
+      nearBudgetProjects,
+      noBudgetProjects,
+      totalBudgetAmount,
     };
-  }, [rows, previousRows, contractors, summary, previousSummary]);
+  }, [rows, previousRows, contractors, summary, previousSummary, projectBudgets]);
 
   async function previewClose() {
     try {
@@ -288,7 +323,8 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
     { label: "Hours this period", value: insights.totalHours.toFixed(2), hint: `${insights.hoursChange >= 0 ? "+" : ""}${insights.hoursChange.toFixed(1)}% vs prior range` },
     { label: "Payroll this period", value: money(insights.currentPayroll), hint: `${insights.payrollChange >= 0 ? "+" : ""}${insights.payrollChange.toFixed(1)}% vs prior range` },
     { label: "Pending approvals", value: String(insights.pendingApprovals), hint: `${insights.submittedHours.toFixed(2)} hrs awaiting review` },
-    { label: "Projects active", value: String(insights.topProjects.length), hint: `${events.length} export events this range` },
+    { label: "Projects active", value: String(insights.totalProjects), hint: `${events.length} export events this range` },
+    { label: "Budget alerts", value: String(insights.overBudgetProjects), hint: `${insights.nearBudgetProjects} near budget • ${insights.noBudgetProjects} without budget` },
   ];
 
   if (!busy && rows.length === 0 && !message) {
@@ -407,6 +443,7 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
             <button className="setuFocusItem" onClick={() => router.push("/approvals?scope=all")}><span>Approvals pending</span><strong>{insights.pendingApprovals}</strong></button>
             <button className="setuFocusItem" onClick={() => router.push("/profiles")}><span>Missing timesheets</span><strong>{insights.missingSubmissions}</strong></button>
             <button className="setuFocusItem" onClick={() => router.push("/profiles")}><span>Missing contractor rates</span><strong>{insights.peopleNeedingRates}</strong></button>
+            <button className="setuFocusItem" onClick={() => router.push(`/projects?preset=${encodeURIComponent(preset)}&rangeStart=${encodeURIComponent(startDate)}&rangeEnd=${encodeURIComponent(endDate)}&healthFilter=over`)}><span>Over-budget projects</span><strong>{insights.overBudgetProjects}</strong></button>
             <button className="setuFocusItem" onClick={() => router.push(`/reports/payroll?start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}`)}><span>Exports / receipts</span><strong>{events.length}</strong></button>
           </div>
         </section>
@@ -425,6 +462,7 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
             <div className="setuTrendCard"><span>Prior payroll</span><strong>{money(insights.previousPayroll)}</strong></div>
             <div className="setuTrendCard"><span>Payroll variance</span><strong className={insights.payrollChange >= 0 ? "isPositive" : "isNegative"}>{insights.payrollChange >= 0 ? "+" : ""}{insights.payrollChange.toFixed(1)}%</strong></div>
             <div className="setuTrendCard"><span>Approval coverage</span><strong>{insights.approvalsReadyPct.toFixed(0)}%</strong></div>
+            <div className="setuTrendCard"><span>Budget capacity</span><strong>{insights.totalBudgetAmount > 0 ? money(insights.totalBudgetAmount) : "—"}</strong></div>
           </div>
           <div className="setuBarsList">
             {insights.topProjects.map((project) => {
@@ -443,7 +481,7 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
           <div className="setuSectionLead">
             <div>
               <div className="setuSectionTitle">Project health</div>
-              <div className="setuSectionHint">Top projects by labor cost for the selected range.</div>
+              <div className="setuSectionHint">Top projects by labor cost, now with budget health, variance risk, and no-budget visibility.</div>
             </div>
             <button className="pill" onClick={() => router.push("/projects")}>View projects</button>
           </div>
@@ -452,11 +490,11 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
               <button className="setuProjectItem" key={project.id} onClick={() => router.push(`/reports/payroll?project_id=${encodeURIComponent(project.id)}&start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}`)}>
                 <div>
                   <div className="setuProjectName">{project.name}</div>
-                  <div className="setuProjectMeta">{project.peopleCount} contractors • {project.pending} pending items</div>
+                  <div className="setuProjectMeta">{project.peopleCount} contractors • {project.pending} pending items • {project.health === "over" ? "Over budget" : project.health === "near" ? "Near budget" : project.health === "within" ? "Within budget" : "No budget"}</div>
                 </div>
                 <div className="setuProjectRight">
-                  <div>{money(project.cost)}</div>
-                  <div className="muted">{project.hours.toFixed(2)} hrs</div>
+                  <div>{money(project.cost, project.currency)}</div>
+                  <div className="muted">{project.budgetAmount > 0 ? `${money(project.budgetAmount, project.currency)} budget` : `${project.hours.toFixed(2)} hrs`}</div>
                 </div>
               </button>
             ))}

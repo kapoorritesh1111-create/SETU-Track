@@ -37,6 +37,7 @@ type TimeEntryRow = {
 
 type WeekTemplate = {
   name: string;
+  isDefault?: boolean;
   rows: Array<{
     dayOffset: number;
     project_id: string;
@@ -113,6 +114,10 @@ function mergeUnlockedDayRows(currentRows: DraftRow[], dayISO: string, replaceme
   const locked = currentRows.filter((r) => r.entry_date === dayISO && (r.status === "submitted" || r.status === "approved"));
   const otherDays = currentRows.filter((r) => r.entry_date !== dayISO);
   return [...otherDays, ...locked, ...replacementRows];
+}
+
+function defaultTemplateName(list: WeekTemplate[]) {
+  return list.find((template) => template.isDefault)?.name || "";
 }
 
 function SetuTrackInner() {
@@ -498,6 +503,69 @@ function SetuTrackInner() {
     }
   }
 
+  function setDefaultTemplate() {
+    if (!selectedTemplate) {
+      setMsg("Select a template first.");
+      return;
+    }
+    const next = templates.map((template) => ({ ...template, isDefault: template.name === selectedTemplate }));
+    persistTemplates(next);
+    setMsg(`Set “${selectedTemplate}” as the default weekly template.`);
+  }
+
+  function applyDefaultTemplate() {
+    const defaultName = defaultTemplateName(templates);
+    if (!defaultName) {
+      setMsg("No default template is set yet.");
+      return;
+    }
+    setSelectedTemplate(defaultName);
+    const template = templates.find((item) => item.name === defaultName);
+    if (!template) {
+      setMsg("Default template could not be found.");
+      return;
+    }
+    setRows((prev) => {
+      let next = [...prev];
+      for (let offset = 0; offset < 7; offset += 1) {
+        const targetDayISO = toISODate(addDays(weekStart, offset));
+        const dayRows = template.rows.filter((row) => row.dayOffset === offset).map((row) => ({
+          tempId: `tmp_${crypto.randomUUID()}`,
+          entry_date: targetDayISO,
+          project_id: row.project_id,
+          time_in: row.time_in,
+          time_out: row.time_out,
+          lunch_hours: row.lunch_hours,
+          mileage: row.mileage,
+          notes: row.notes,
+          status: "draft" as EntryStatus,
+          rejection_reason: null,
+        }));
+        if (!dayRows.length) continue;
+        next = mergeUnlockedDayRows(next, targetDayISO, dayRows);
+      }
+      return next;
+    });
+    setMsg(`Applied default template “${defaultName}”. Review and edit before saving.`);
+  }
+
+  function copyMondayAcrossWeek() {
+    const mondayRows = rows.filter((row) => row.entry_date === weekStartISO && row.status !== "submitted" && row.status !== "approved");
+    if (!mondayRows.length) {
+      setMsg("Add editable lines to the first day of the week before copying across the week.");
+      return;
+    }
+    setRows((prev) => {
+      let next = [...prev];
+      for (let offset = 1; offset < 7; offset += 1) {
+        const targetDayISO = toISODate(addDays(weekStart, offset));
+        next = mergeUnlockedDayRows(next, targetDayISO, mondayRows.map((row) => cloneDraftRow(row, targetDayISO)));
+      }
+      return next;
+    });
+    setMsg("Copied the first day pattern across the rest of the week. Review and edit before saving.");
+  }
+
   function saveWeekAsTemplate() {
     const baseRows = rows
       .filter((row) => row.entry_date >= weekStartISO && row.entry_date <= weekEndISO)
@@ -520,7 +588,8 @@ function SetuTrackInner() {
     const name = window.prompt("Template name", `Week template ${templates.length + 1}`)?.trim();
     if (!name) return;
 
-    const next = [...templates.filter((template) => template.name !== name), { name, rows: baseRows }];
+    const existing = templates.find((template) => template.name === name);
+    const next = [...templates.filter((template) => template.name !== name), { name, rows: baseRows, isDefault: existing?.isDefault || false }];
     persistTemplates(next);
     setSelectedTemplate(name);
     setMsg(`Saved template “${name}”.`);
@@ -591,12 +660,15 @@ function SetuTrackInner() {
         <Button variant="ghost" disabled={busy || loadingWeek} onClick={copyLastWeekIntoCurrentWeek}>
           Copy last week
         </Button>
+        <Button variant="ghost" disabled={busy || loadingWeek} onClick={copyMondayAcrossWeek}>
+          Copy first day across week
+        </Button>
         <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <select className="select" value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value)} style={{ minWidth: 180 }}>
             <option value="">Week template…</option>
             {templates.map((template) => (
               <option key={template.name} value={template.name}>
-                {template.name}
+                {template.name}{template.isDefault ? " • default" : ""}
               </option>
             ))}
           </select>
@@ -605,6 +677,12 @@ function SetuTrackInner() {
           </Button>
           <Button variant="ghost" disabled={busy || loadingWeek} onClick={saveWeekAsTemplate}>
             Save as template
+          </Button>
+          <Button variant="ghost" disabled={!selectedTemplate || busy || loadingWeek} onClick={setDefaultTemplate}>
+            Set default
+          </Button>
+          <Button variant="ghost" disabled={busy || loadingWeek || !defaultTemplateName(templates)} onClick={applyDefaultTemplate}>
+            Apply default
           </Button>
           <Button variant="ghost" disabled={!selectedTemplate || busy || loadingWeek} onClick={deleteSelectedTemplate}>
             Delete template

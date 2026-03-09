@@ -154,8 +154,10 @@ function AnalyticsPageContent() {
       byProjectMap.set(key, current);
     }
     const byProject = Array.from(byProjectMap.values()).sort((a,b) => b.cost - a.cost).slice(0, 5);
-    const budgetedProjects = byProject.filter((item) => item.budgetAmount > 0);
-    const overBudgetProjects = budgetedProjects.filter((item) => item.cost > item.budgetAmount);
+    const budgetedProjects = byProject.filter((item) => item.budgetAmount > 0 || item.budgetHours > 0);
+    const overBudgetProjects = budgetedProjects.filter((item) => (item.budgetAmount > 0 && item.cost > item.budgetAmount) || (item.budgetHours > 0 && item.hours > item.budgetHours));
+    const nearBudgetProjects = budgetedProjects.filter((item) => !overBudgetProjects.includes(item) && ((item.budgetAmount > 0 && item.cost / item.budgetAmount >= 0.8) || (item.budgetHours > 0 && item.hours / item.budgetHours >= 0.8)));
+    const totalBudgetAmount = budgetedProjects.reduce((sum, item) => sum + Number(item.budgetAmount || 0), 0);
 
     const byPersonMap = new Map<string, { id: string; name: string; hours: number; cost: number }>();
     for (const row of rows) {
@@ -167,7 +169,7 @@ function AnalyticsPageContent() {
     }
     const byPerson = Array.from(byPersonMap.values()).sort((a,b) => b.hours - a.hours).slice(0, 5);
 
-    return { totalHours, approvedHours, submittedHours, totalCost, people, projects, hoursDelta, costDelta, byProject, byPerson, budgetedProjects: budgetedProjects.length, overBudgetProjects: overBudgetProjects.length };
+    return { totalHours, approvedHours, submittedHours, totalCost, people, projects, hoursDelta, costDelta, byProject, byPerson, budgetedProjects: budgetedProjects.length, overBudgetProjects: overBudgetProjects.length, nearBudgetProjects: nearBudgetProjects.length, totalBudgetAmount };
   }, [rows, previousRows, projectBudgets]);
 
   const barMax = Math.max(1, ...summary.byProject.map((item) => item.cost), ...summary.byPerson.map((item) => item.hours));
@@ -210,7 +212,7 @@ function AnalyticsPageContent() {
                 <div className="setuMetricCard"><div className="setuMetricLabel">Total labor cost</div><div className="setuMetricValue">{money(summary.totalCost)}</div><div className={`setuMetricHint ${summary.costDelta >= 0 ? "analyticsDeltaPositive" : "analyticsDeltaNegative"}`}>{pct(summary.costDelta)} vs prior range</div></div>
                 <div className="setuMetricCard"><div className="setuMetricLabel">Tracked hours</div><div className="setuMetricValue">{summary.totalHours.toFixed(2)}</div><div className={`setuMetricHint ${summary.hoursDelta >= 0 ? "analyticsDeltaPositive" : "analyticsDeltaNegative"}`}>{pct(summary.hoursDelta)} vs prior range</div></div>
                 <div className="setuMetricCard"><div className="setuMetricLabel">Approved hours</div><div className="setuMetricValue">{summary.approvedHours.toFixed(2)}</div><div className="setuMetricHint">{summary.submittedHours.toFixed(2)} hrs still awaiting review</div></div>
-                <div className="setuMetricCard"><div className="setuMetricLabel">Coverage</div><div className="setuMetricValue">{summary.people} people</div><div className="setuMetricHint">Across {summary.projects} active projects in {presetLabel(preset, start, end).toLowerCase()} • {summary.overBudgetProjects} over budget</div></div>
+                <div className="setuMetricCard"><div className="setuMetricLabel">Coverage</div><div className="setuMetricValue">{summary.people} people</div><div className="setuMetricHint">Across {summary.projects} active projects in {presetLabel(preset, start, end).toLowerCase()} • {summary.overBudgetProjects} over budget • {summary.nearBudgetProjects} near budget</div></div>
               </div>
 
               <div className="analyticsSplit">
@@ -263,7 +265,13 @@ function AnalyticsPageContent() {
                 </div>
 
                 <div className="analyticsPanel">
-                  <div className="setuCardHeaderRow"><div><div className="setuSectionTitle" style={{ fontSize: 20 }}>Connected screens</div><div className="setuSectionHint">The dashboard remains the control surface. Use these workspaces for deeper decisions.</div></div></div>
+                  <div className="setuCardHeaderRow"><div><div className="setuSectionTitle" style={{ fontSize: 20 }}>Budget variance signals</div><div className="setuSectionHint">Budget vs actual now travels with the same shared period you use on Dashboard, Projects, and Payroll.</div></div><Button variant="secondary" onClick={() => (window.location.href = `/projects`)}>Projects</Button></div>
+                  <div className="setuMetricGrid" style={{ marginBottom: 14 }}>
+                    <div className="setuMetricCard"><div className="setuMetricLabel">Budgeted projects</div><div className="setuMetricValue">{summary.budgetedProjects}</div><div className="setuMetricHint">Projects with amount or hour targets in this range.</div></div>
+                    <div className="setuMetricCard"><div className="setuMetricLabel">Over budget</div><div className="setuMetricValue">{summary.overBudgetProjects}</div><div className="setuMetricHint">Needs manager attention now.</div></div>
+                    <div className="setuMetricCard"><div className="setuMetricLabel">Near budget</div><div className="setuMetricValue">{summary.nearBudgetProjects}</div><div className="setuMetricHint">Within the 80–99% warning zone.</div></div>
+                    <div className="setuMetricCard"><div className="setuMetricLabel">Budget capacity</div><div className="setuMetricValue">{summary.totalBudgetAmount > 0 ? money(summary.totalBudgetAmount) : "—"}</div><div className="setuMetricHint">Compared to {money(summary.totalCost)} actual labor.</div></div>
+                  </div>
                   <div className="setuFocusList">
                     <button className="setuFocusItem" onClick={() => (window.location.href = "/dashboard")}><span>Command Center</span><strong>Open</strong></button>
                     <button className="setuFocusItem" onClick={() => (window.location.href = "/approvals?scope=all")}><span>Approvals queue</span><strong>{summary.submittedHours.toFixed(2)} hrs</strong></button>
