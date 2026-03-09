@@ -62,8 +62,8 @@ type ProjectBudgetLite = {
   budget_currency: string | null;
 };
 
-function money(x: number) {
-  return `USD ${x.toFixed(2)}`;
+function money(x: number, currency = "USD") {
+  return `${currency} ${x.toFixed(2)}`;
 }
 
 function pctChange(current: number, previous: number) {

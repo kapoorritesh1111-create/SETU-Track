@@ -1,0 +1,1 @@
+Fixed AdminDashboard money() helper to accept optional currency argument used by project health cards.
