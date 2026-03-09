@@ -6,7 +6,7 @@ import RequireOnboarding from "../../components/auth/RequireOnboarding";
 import AppShell from "../../components/layout/AppShell";
 import { supabase } from "../../lib/supabaseBrowser";
 import { useProfile } from "../../lib/useProfile";
-import { addDays, formatShort, startOfWeekSunday, toISODate, weekRangeLabel } from "../../lib/date";
+import { addDays, formatShort, parseISODate, startOfWeekSunday, toISODate, weekRangeLabel } from "../../lib/date";
 import { StatusChip } from "../../components/ui/StatusChip";
 import Button from "../../components/ui/Button";
 
@@ -33,6 +33,20 @@ type TimeEntryRow = {
   hours_worked?: number | null; // exists in v_time_entries after DB fix
 };
 
+
+
+type WeekTemplate = {
+  name: string;
+  rows: Array<{
+    dayOffset: number;
+    project_id: string;
+    time_in: string;
+    time_out: string;
+    lunch_hours: number;
+    mileage: number;
+    notes: string;
+  }>;
+};
 type DraftRow = {
   id?: string;
   tempId: string;
@@ -80,6 +94,27 @@ function StatusPill({ status }: { status: EntryStatus | undefined }) {
   return <StatusChip status={s} />;
 }
 
+function cloneDraftRow(source: DraftRow, entryDate: string): DraftRow {
+  return {
+    tempId: `tmp_${crypto.randomUUID()}` ,
+    entry_date: entryDate,
+    project_id: source.project_id,
+    time_in: source.time_in,
+    time_out: source.time_out,
+    lunch_hours: Number(source.lunch_hours ?? 0),
+    mileage: Number(source.mileage ?? 0),
+    notes: source.notes ?? "",
+    status: "draft",
+    rejection_reason: null,
+  };
+}
+
+function mergeUnlockedDayRows(currentRows: DraftRow[], dayISO: string, replacementRows: DraftRow[]) {
+  const locked = currentRows.filter((r) => r.entry_date === dayISO && (r.status === "submitted" || r.status === "approved"));
+  const otherDays = currentRows.filter((r) => r.entry_date !== dayISO);
+  return [...otherDays, ...locked, ...replacementRows];
+}
+
 function SetuTrackInner() {
   const { loading: profLoading, profile, userId } = useProfile();
 
@@ -93,10 +128,30 @@ function SetuTrackInner() {
   const [msg, setMsg] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [loadingWeek, setLoadingWeek] = useState(false);
+  const [templates, setTemplates] = useState<WeekTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState("");
 
   const canView = !!userId && !!profile;
   const isManagerOrAdmin = profile?.role === "admin" || profile?.role === "manager";
   const isContractor = profile?.role === "contractor";
+
+  useEffect(() => {
+    if (!userId) return;
+    try {
+      const raw = window.localStorage.getItem(`setu-track-week-templates:${userId}`);
+      setTemplates(raw ? JSON.parse(raw) : []);
+    } catch {
+      setTemplates([]);
+    }
+  }, [userId]);
+
+  function persistTemplates(next: WeekTemplate[]) {
+    setTemplates(next);
+    if (!userId) return;
+    try {
+      window.localStorage.setItem(`setu-track-week-templates:${userId}`, JSON.stringify(next));
+    } catch {}
+  }
 
   useEffect(() => {
     if (!canView) return;
@@ -376,6 +431,140 @@ function SetuTrackInner() {
     }
   }
 
+
+  function copyPreviousDayInto(dayISO: string) {
+    const previousISO = toISODate(addDays(parseISODate(dayISO), -1));
+    const sourceRows = rows.filter((r) => r.entry_date === previousISO);
+    if (!sourceRows.length) {
+      setMsg("No previous-day lines found to copy.");
+      return;
+    }
+    setRows((prev) => mergeUnlockedDayRows(prev, dayISO, sourceRows.map((row) => cloneDraftRow(row, dayISO))));
+    setMsg(`Copied ${sourceRows.length} line${sourceRows.length === 1 ? "" : "s"} from ${previousISO} to ${dayISO}.`);
+  }
+
+  async function copyLastWeekIntoCurrentWeek() {
+    if (!userId) return;
+    setBusy(true);
+    setMsg("");
+    try {
+      const sourceStart = toISODate(addDays(weekStart, -7));
+      const sourceEnd = toISODate(addDays(weekStart, -1));
+      const { data, error } = await supabase
+        .from("time_entries")
+        .select("id, entry_date, project_id, time_in, time_out, lunch_hours, mileage, notes, status, rejection_reason")
+        .eq("user_id", userId)
+        .gte("entry_date", sourceStart)
+        .lte("entry_date", sourceEnd)
+        .neq("status", "rejected")
+        .order("entry_date", { ascending: true });
+
+      if (error) {
+        setMsg(error.message);
+        return;
+      }
+      const sourceRows = (((data as any) ?? []) as TimeEntryRow[]).map((r) => ({
+        tempId: `src_${r.id}`,
+        entry_date: r.entry_date,
+        project_id: r.project_id,
+        time_in: timeToHHMM(r.time_in),
+        time_out: timeToHHMM(r.time_out),
+        lunch_hours: Number(r.lunch_hours ?? 0),
+        mileage: Number(r.mileage ?? 0),
+        notes: r.notes ?? "",
+        status: "draft" as EntryStatus,
+        rejection_reason: null,
+      }));
+
+      if (!sourceRows.length) {
+        setMsg("No entries found in the prior week to copy.");
+        return;
+      }
+
+      setRows((prev) => {
+        let next = [...prev];
+        for (let offset = 0; offset < 7; offset += 1) {
+          const sourceDayISO = toISODate(addDays(weekStart, offset - 7));
+          const targetDayISO = toISODate(addDays(weekStart, offset));
+          const dayRows = sourceRows.filter((row) => row.entry_date === sourceDayISO);
+          if (!dayRows.length) continue;
+          next = mergeUnlockedDayRows(next, targetDayISO, dayRows.map((row) => cloneDraftRow(row, targetDayISO)));
+        }
+        return next;
+      });
+      setMsg(`Copied last week into ${weekRangeLabel(weekStart)}. Review and edit before submitting.`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function saveWeekAsTemplate() {
+    const baseRows = rows
+      .filter((row) => row.entry_date >= weekStartISO && row.entry_date <= weekEndISO)
+      .filter((row) => row.project_id || row.time_in || row.time_out || (row.notes ?? "") || Number(row.mileage ?? 0) > 0 || Number(row.lunch_hours ?? 0) > 0)
+      .map((row) => ({
+        dayOffset: Math.round((parseISODate(row.entry_date).getTime() - weekStart.getTime()) / 86400000),
+        project_id: row.project_id,
+        time_in: row.time_in,
+        time_out: row.time_out,
+        lunch_hours: Number(row.lunch_hours ?? 0),
+        mileage: Number(row.mileage ?? 0),
+        notes: row.notes ?? "",
+      }));
+
+    if (!baseRows.length) {
+      setMsg("Add at least one line before saving a weekly template.");
+      return;
+    }
+
+    const name = window.prompt("Template name", `Week template ${templates.length + 1}`)?.trim();
+    if (!name) return;
+
+    const next = [...templates.filter((template) => template.name !== name), { name, rows: baseRows }];
+    persistTemplates(next);
+    setSelectedTemplate(name);
+    setMsg(`Saved template “${name}”.`);
+  }
+
+  function applyTemplate() {
+    const template = templates.find((item) => item.name === selectedTemplate);
+    if (!template) {
+      setMsg("Select a template first.");
+      return;
+    }
+
+    setRows((prev) => {
+      let next = [...prev];
+      for (let offset = 0; offset < 7; offset += 1) {
+        const targetDayISO = toISODate(addDays(weekStart, offset));
+        const dayRows = template.rows.filter((row) => row.dayOffset === offset).map((row) => ({
+          tempId: `tmp_${crypto.randomUUID()}` ,
+          entry_date: targetDayISO,
+          project_id: row.project_id,
+          time_in: row.time_in,
+          time_out: row.time_out,
+          lunch_hours: row.lunch_hours,
+          mileage: row.mileage,
+          notes: row.notes,
+          status: "draft" as EntryStatus,
+          rejection_reason: null,
+        }));
+        if (!dayRows.length) continue;
+        next = mergeUnlockedDayRows(next, targetDayISO, dayRows);
+      }
+      return next;
+    });
+    setMsg(`Applied template “${template.name}”. Review and edit before saving.`);
+  }
+
+  function deleteSelectedTemplate() {
+    if (!selectedTemplate) return;
+    const next = templates.filter((template) => template.name !== selectedTemplate);
+    persistTemplates(next);
+    setSelectedTemplate("");
+    setMsg("Template removed.");
+  }
+
   const headerSubtitle = profile ? `${weekRangeLabel(weekStart)} • Role: ${profile.role}` : `${weekRangeLabel(weekStart)}`;
 
   const headerRight = (
@@ -398,7 +587,29 @@ function SetuTrackInner() {
         </button>
       </div>
 
-      <div className="tsActions">
+      <div className="tsActions" style={{ flexWrap: "wrap", gap: 8 }}>
+        <Button variant="ghost" disabled={busy || loadingWeek} onClick={copyLastWeekIntoCurrentWeek}>
+          Copy last week
+        </Button>
+        <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <select className="select" value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value)} style={{ minWidth: 180 }}>
+            <option value="">Week template…</option>
+            {templates.map((template) => (
+              <option key={template.name} value={template.name}>
+                {template.name}
+              </option>
+            ))}
+          </select>
+          <Button variant="ghost" disabled={!selectedTemplate || busy || loadingWeek} onClick={applyTemplate}>
+            Apply template
+          </Button>
+          <Button variant="ghost" disabled={busy || loadingWeek} onClick={saveWeekAsTemplate}>
+            Save as template
+          </Button>
+          <Button variant="ghost" disabled={!selectedTemplate || busy || loadingWeek} onClick={deleteSelectedTemplate}>
+            Delete template
+          </Button>
+        </div>
         <Button variant="secondary" disabled={busy || loadingWeek} onClick={saveDraft}>
           {busy ? "Saving…" : "Save draft"}
         </Button>
@@ -526,6 +737,15 @@ function SetuTrackInner() {
                   </div>
                   <div className="tsDayTools">
                     <div className="tsDayTotal">Day total: {(hoursByDay[dayISO] ?? 0).toFixed(2)} hrs</div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyPreviousDayInto(dayISO)}
+                      disabled={busy || loadingWeek || weekStartISO === dayISO}
+                      title="Copy the previous day into this day"
+                    >
+                      Copy previous day
+                    </Button>
                     <Button
                       variant="secondary"
                       size="sm"
