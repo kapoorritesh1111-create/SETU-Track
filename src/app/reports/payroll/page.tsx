@@ -8,6 +8,7 @@ import MetaFooter from "../../../components/ui/MetaFooter";
 import { EmptyState } from "../../../components/ui/EmptyState";
 import Drawer from "../../../components/ui/Drawer";
 import ExportReceiptDrawer from "../../../components/ui/ExportReceiptDrawer";
+import PayrollReportGuide from "../../../components/payroll/PayrollReportGuide";
 import { apiJson } from "../../../lib/api/client";
 import { buildRangeQuery, coercePreset } from "../../../lib/rangeQuery";
 
@@ -440,19 +441,12 @@ function PayrollReportPageContent() {
             </div>
 
             <div className="setuInsightGrid">
-              <div className="setuHeroCard setuNarrativeCard">
-                <div className="setuSectionEyebrow">Current reporting scope</div>
-                <h2>One payroll workspace for finance summary, contractor summary, and row-level action control.</h2>
-                <p>
-                  Filters support current week, last week, current month, last month, and custom range. Project and contractor summaries stay aligned to the active access scope, while export and payment signals remain visible in the same view.
-                </p>
-                <div className="setuNarrativeStats">
-                  <span className="pill">{payload.kpis.visible_projects} visible projects</span>
-                  <span className="pill">{payload.kpis.periods_in_view} periods in view</span>
-                  <span className="pill">{payload.kpis.exports_linked} exports linked</span>
-                  <span className="pill">{payload.kpis.paid_rows} paid rows</span>
-                </div>
-              </div>
+              <PayrollReportGuide
+                periodLabel={`${payload?.range.start || "—"} → ${payload?.range.end || "—"}`}
+                projectCount={payload?.project_summary.length || 0}
+                awaitingExport={reportSignals.awaitingExport}
+                awaitingPayment={reportSignals.awaitingPayment}
+              />
 
               <div className="setuChartCard">
                 <div className="setuSectionTitle">Payroll cost trend</div>

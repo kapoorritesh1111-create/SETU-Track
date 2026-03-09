@@ -7,6 +7,8 @@ export type ActivityAuditRow = {
   entity_id: string | null;
   created_at: string | null;
   actor_id: string | null;
+  actor_name: string | null;
+  actor_email: string | null;
   metadata: Record<string, unknown> | null;
 };
 
@@ -57,9 +59,42 @@ export async function getActivityData(client: SupabaseClient, orgId: string) {
     throw new Error(auditRes.error?.message || exportRes.error?.message || runRes.error?.message || "Failed to load activity");
   }
 
+  const rawAuditRows = ((auditRes.data || []) as ActivityAuditRow[]).map((row) => ({
+    ...row,
+    metadata: (row.metadata || null) as Record<string, unknown> | null,
+  }));
+
+  const actorIds = Array.from(
+    new Set(rawAuditRows.map((row) => row.actor_id).filter((value): value is string => Boolean(value)))
+  );
+
+  let profileMap = new Map<string, { full_name: string | null; email: string | null }>();
+
+  if (actorIds.length) {
+    const { data: profileRows, error: profileErr } = await client
+      .from("profiles")
+      .select("id,full_name,email")
+      .in("id", actorIds);
+
+    if (profileErr) {
+      throw new Error(profileErr.message || "Failed to load actor profiles");
+    }
+
+    profileMap = new Map(
+      (profileRows || []).map((row: any) => [row.id, { full_name: row.full_name || null, email: row.email || null }])
+    );
+  }
+
   return {
-    auditRows: ((auditRes.data || []) as ActivityAuditRow[]).map((row) => ({ ...row, metadata: (row.metadata || null) as Record<string, unknown> | null })),
-    exportRows: ((exportRes.data || []) as ActivityExportRow[]).map((row) => ({ ...row, metadata: (row.metadata || null) as Record<string, unknown> | null })),
+    auditRows: rawAuditRows.map((row) => ({
+      ...row,
+      actor_name: row.actor_id ? profileMap.get(row.actor_id)?.full_name || null : null,
+      actor_email: row.actor_id ? profileMap.get(row.actor_id)?.email || null : null,
+    })),
+    exportRows: ((exportRes.data || []) as ActivityExportRow[]).map((row) => ({
+      ...row,
+      metadata: (row.metadata || null) as Record<string, unknown> | null,
+    })),
     runRows: (runRes.data || []) as ActivityPayrollRunRow[],
   };
 }

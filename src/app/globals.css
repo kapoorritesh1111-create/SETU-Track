@@ -1520,3 +1520,86 @@ textarea.nativeControl {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+
+.setuEventRow {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  gap: 12px;
+  align-items: start;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.setuEventRow:last-child {
+  border-bottom: 0;
+}
+
+.setuEventAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--panel-soft);
+  font-weight: 800;
+  color: var(--text);
+}
+
+.setuEventHeadline {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.setuEventSubhead {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.setuEventDetail {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.setuEventMeta {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.setuEventAside {
+  text-align: right;
+}
+
+.setuGuideCard {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 18px;
+}
+
+.setuGuideSteps {
+  display: grid;
+  gap: 12px;
+}
+
+.setuGuideStep {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.setuGuideStepNo {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--panel-soft);
+  font-weight: 800;
+}

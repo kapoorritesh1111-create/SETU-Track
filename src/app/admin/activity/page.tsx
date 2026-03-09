@@ -9,6 +9,8 @@ import TableSkeleton from "../../../components/ui/TableSkeleton";
 import { supabase } from "../../../lib/supabaseBrowser";
 import { useProfile } from "../../../lib/useProfile";
 import { getActivityData, type ActivityAuditRow as AuditRow, type ActivityExportRow as ExportEvent, type ActivityPayrollRunRow as PayrollRun } from "../../../lib/data/activityData";
+import ActivityEventRow from "../../../components/activity/ActivityEventRow";
+import { activityTitle, formatActivityDetail, humanizeActivityVerb, activityTone } from "../../../lib/activityPresentation";
 
 function formatWhen(value?: string | null) {
   return value ? new Date(value).toLocaleString() : "—";
@@ -19,19 +21,10 @@ function formatMoney(value?: number | null) {
 }
 
 
-function metadataPreview(metadata?: Record<string, unknown> | null) {
-  if (!metadata) return "No metadata";
-  try {
-    return JSON.stringify(metadata, null, 2).slice(0, 220);
-  } catch {
-    return "Unable to render metadata";
-  }
-}
-function tone(action?: string | null) {
-  const text = String(action || "").toLowerCase();
-  if (text.includes("void") || text.includes("delete") || text.includes("reject")) return "pill warn";
-  if (text.includes("lock") || text.includes("approve") || text.includes("export") || text.includes("paid")) return "pill ok";
-  return "pill";
+
+function metadataLabel(metadata?: Record<string, unknown> | null) {
+  const value = metadata && typeof metadata === "object" ? metadata["label"] : null;
+  return typeof value === "string" && value.trim() ? value : null;
 }
 
 export default function AdminActivityPage() {
@@ -95,17 +88,16 @@ function AdminActivityInner() {
             <div className="setuSectionLead"><div><div className="setuSectionTitle">Audit timeline</div><div className="setuSectionHint">Trace payroll lifecycle, approvals, and data changes from one place.</div></div></div>
             <div className="setuMiniTable">
               {auditRows.map((row) => (
-                <div className="setuMiniRow" key={row.id} style={{ alignItems: "flex-start" }}>
-                  <div>
-                    <div style={{ fontWeight: 800 }}>{row.action || "event"}</div>
-                    <div className="muted" style={{ fontSize: 12 }}>{row.entity_type || "entity"} • {row.entity_id || "—"} • actor {row.actor_id || "system"}</div>
-                    {row.metadata ? <div className="muted" style={{ fontSize: 12, whiteSpace: "pre-wrap" }}>{metadataPreview(row.metadata)}</div> : null}
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <span className={tone(row.action)}>{row.action || "event"}</span>
-                    <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{formatWhen(row.created_at)}</div>
-                  </div>
-                </div>
+                <ActivityEventRow
+                  key={row.id}
+                  actorName={row.actor_name}
+                  actorEmail={row.actor_email}
+                  title={activityTitle(row.action)}
+                  actionLabel={humanizeActivityVerb(row.action)}
+                  detail={formatActivityDetail(row)}
+                  timestamp={row.created_at}
+                  tone={activityTone(row.action)}
+                />
               ))}
             </div>
           </section>
@@ -124,7 +116,7 @@ function AdminActivityInner() {
               {exportRows.map((row) => (
                 <div className="setuMiniRow" key={`exp-${row.id}`}>
                   <div>
-                    <div style={{ fontWeight: 800 }}>{row.metadata?.label || row.export_type || "Export event"}</div>
+                    <div style={{ fontWeight: 800 }}>{metadataLabel(row.metadata) || row.export_type || "Export event"}</div>
                     <div className="muted" style={{ fontSize: 12 }}>{row.period_start || "—"} → {row.period_end || "—"}</div>
                   </div>
                   <div className="muted" style={{ fontSize: 12 }}>{formatWhen(row.created_at)}</div>
