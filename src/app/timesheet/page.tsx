@@ -135,6 +135,7 @@ function SetuTrackInner() {
   const [loadingWeek, setLoadingWeek] = useState(false);
   const [templates, setTemplates] = useState<WeekTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [favoriteProjectIds, setFavoriteProjectIds] = useState<string[]>([]);
 
   const canView = !!userId && !!profile;
   const isManagerOrAdmin = profile?.role === "admin" || profile?.role === "manager";
@@ -148,7 +149,21 @@ function SetuTrackInner() {
     } catch {
       setTemplates([]);
     }
+    try {
+      const rawFavs = window.localStorage.getItem(`setu-track-favorite-projects:${userId}`);
+      setFavoriteProjectIds(rawFavs ? JSON.parse(rawFavs) : []);
+    } catch {
+      setFavoriteProjectIds([]);
+    }
   }, [userId]);
+
+  function persistFavoriteProjects(next: string[]) {
+    setFavoriteProjectIds(next);
+    if (!userId) return;
+    try {
+      window.localStorage.setItem(`setu-track-favorite-projects:${userId}`, JSON.stringify(next));
+    } catch {}
+  }
 
   function persistTemplates(next: WeekTemplate[]) {
     setTemplates(next);
@@ -634,6 +649,36 @@ function SetuTrackInner() {
     setMsg("Template removed.");
   }
 
+  function toggleFavoriteProject(projectId: string) {
+    const next = favoriteProjectIds.includes(projectId) ? favoriteProjectIds.filter((id) => id !== projectId) : [...favoriteProjectIds, projectId];
+    persistFavoriteProjects(next);
+    const projectName = projects.find((item) => item.id === projectId)?.name || "project";
+    setMsg(`${next.includes(projectId) ? 'Saved' : 'Removed'} ${projectName} ${next.includes(projectId) ? 'to' : 'from'} favorites.`);
+  }
+
+  function addFavoriteProjectLine(projectId: string) {
+    const dayISO = weekStartISO;
+    const row: DraftRow = {
+      tempId: `tmp_${crypto.randomUUID()}`,
+      entry_date: dayISO,
+      project_id: projectId,
+      time_in: "09:00",
+      time_out: "17:00",
+      lunch_hours: 0.5,
+      mileage: 0,
+      notes: "",
+      status: "draft",
+      rejection_reason: null,
+    };
+    setRows((prev) => {
+      const editable = prev.filter((r) => r.entry_date === dayISO && r.status !== "submitted" && r.status !== "approved");
+      return mergeUnlockedDayRows(prev, dayISO, [...editable, row]);
+    });
+    setMsg(`Added favorite project to ${dayISO}. Review the line before saving.`);
+  }
+
+  const favoriteProjects = projects.filter((project) => favoriteProjectIds.includes(project.id));
+
   const headerSubtitle = profile ? `${weekRangeLabel(weekStart)} • Role: ${profile.role}` : `${weekRangeLabel(weekStart)}`;
 
   const headerRight = (
@@ -747,6 +792,24 @@ function SetuTrackInner() {
         </div>
       </section>
 
+      {favoriteProjects.length ? (
+        <section className="card cardPad" style={{ marginBottom: 14 }}>
+          <div className="setuCardHeaderRow">
+            <div>
+              <div className="setuSectionTitle" style={{ fontSize: 18 }}>Favorite projects</div>
+              <div className="setuSectionHint">Quick-start repeat work by dropping a saved project onto the first day of the week.</div>
+            </div>
+          </div>
+          <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+            {favoriteProjects.map((project) => (
+              <button key={project.id} type="button" className="pill" onClick={() => addFavoriteProjectLine(project.id)}>
+                {project.name}
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       <section className="tsMetricsGrid">
         <div className="tsMetricCard">
           <div className="tsMetricLabel">Days logged</div>
@@ -859,19 +922,26 @@ function SetuTrackInner() {
                         <strong>{rowHours.toFixed(2)} hrs</strong>
                       </div>
                       <div className="tsGridRow">
-                        <select
-                          className="input tsControl"
-                          value={r.project_id}
-                          disabled={locked || (isContractor && projects.length === 0)}
-                          onChange={(e) => updateRow(r.tempId, { project_id: e.target.value })}
-                        >
-                          <option value="">Select…</option>
-                          {projects.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.name}
-                            </option>
-                          ))}
-                        </select>
+                        <div style={{ display: "grid", gap: 6 }}>
+                          <select
+                            className="input tsControl"
+                            value={r.project_id}
+                            disabled={locked || (isContractor && projects.length === 0)}
+                            onChange={(e) => updateRow(r.tempId, { project_id: e.target.value })}
+                          >
+                            <option value="">Select…</option>
+                            {projects.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.name}
+                              </option>
+                            ))}
+                          </select>
+                          {r.project_id ? (
+                            <button type="button" className="pill" onClick={() => toggleFavoriteProject(r.project_id)} disabled={locked}>
+                              {favoriteProjectIds.includes(r.project_id) ? "★ Favorite" : "☆ Save favorite"}
+                            </button>
+                          ) : null}
+                        </div>
 
                         <input className="input tsControl" type="time" step={60} value={r.time_in} disabled={locked} onChange={(e) => updateRow(r.tempId, { time_in: e.target.value })} />
 

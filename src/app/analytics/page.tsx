@@ -158,6 +158,9 @@ function AnalyticsPageContent() {
     const overBudgetProjects = budgetedProjects.filter((item) => (item.budgetAmount > 0 && item.cost > item.budgetAmount) || (item.budgetHours > 0 && item.hours > item.budgetHours));
     const nearBudgetProjects = budgetedProjects.filter((item) => !overBudgetProjects.includes(item) && ((item.budgetAmount > 0 && item.cost / item.budgetAmount >= 0.8) || (item.budgetHours > 0 && item.hours / item.budgetHours >= 0.8)));
     const totalBudgetAmount = budgetedProjects.reduce((sum, item) => sum + Number(item.budgetAmount || 0), 0);
+    const pendingForecast = rows.filter((row) => row.status === "submitted").reduce((sum, row) => sum + Number(row.hours_worked || 0) * Number(row.hourly_rate_snapshot || 0), 0);
+    const projectedPayroll = totalCost + pendingForecast;
+    const staleApprovals = rows.filter((row) => row.status === "submitted" && ((Date.now() - new Date(`${row.entry_date}T00:00:00`).getTime()) / 86400000) > 2).length;
 
     const byPersonMap = new Map<string, { id: string; name: string; hours: number; cost: number }>();
     for (const row of rows) {
@@ -169,7 +172,7 @@ function AnalyticsPageContent() {
     }
     const byPerson = Array.from(byPersonMap.values()).sort((a,b) => b.hours - a.hours).slice(0, 5);
 
-    return { totalHours, approvedHours, submittedHours, totalCost, people, projects, hoursDelta, costDelta, byProject, byPerson, budgetedProjects: budgetedProjects.length, overBudgetProjects: overBudgetProjects.length, nearBudgetProjects: nearBudgetProjects.length, totalBudgetAmount };
+    return { totalHours, approvedHours, submittedHours, totalCost, people, projects, hoursDelta, costDelta, byProject, byPerson, budgetedProjects: budgetedProjects.length, overBudgetProjects: overBudgetProjects.length, nearBudgetProjects: nearBudgetProjects.length, totalBudgetAmount, pendingForecast, projectedPayroll, staleApprovals };
   }, [rows, previousRows, projectBudgets]);
 
   const barMax = Math.max(1, ...summary.byProject.map((item) => item.cost), ...summary.byPerson.map((item) => item.hours));
@@ -212,7 +215,9 @@ function AnalyticsPageContent() {
                 <div className="setuMetricCard"><div className="setuMetricLabel">Total labor cost</div><div className="setuMetricValue">{money(summary.totalCost)}</div><div className={`setuMetricHint ${summary.costDelta >= 0 ? "analyticsDeltaPositive" : "analyticsDeltaNegative"}`}>{pct(summary.costDelta)} vs prior range</div></div>
                 <div className="setuMetricCard"><div className="setuMetricLabel">Tracked hours</div><div className="setuMetricValue">{summary.totalHours.toFixed(2)}</div><div className={`setuMetricHint ${summary.hoursDelta >= 0 ? "analyticsDeltaPositive" : "analyticsDeltaNegative"}`}>{pct(summary.hoursDelta)} vs prior range</div></div>
                 <div className="setuMetricCard"><div className="setuMetricLabel">Approved hours</div><div className="setuMetricValue">{summary.approvedHours.toFixed(2)}</div><div className="setuMetricHint">{summary.submittedHours.toFixed(2)} hrs still awaiting review</div></div>
-                <div className="setuMetricCard"><div className="setuMetricLabel">Coverage</div><div className="setuMetricValue">{summary.people} people</div><div className="setuMetricHint">Across {summary.projects} active projects in {presetLabel(preset, start, end).toLowerCase()} • {summary.overBudgetProjects} over budget • {summary.nearBudgetProjects} near budget</div></div>
+                <div className="setuMetricCard"><div className="setuMetricLabel">Projected payroll</div><div className="setuMetricValue">{money(summary.projectedPayroll)}</div><div className="setuMetricHint">{money(summary.pendingForecast)} pending approvals still to forecast.</div></div>
+                <div className="setuMetricCard"><div className="setuMetricLabel">Coverage</div><div className="setuMetricValue">{summary.people} people</div><div className="setuMetricHint">Across {summary.projects} active projects in {presetLabel(preset, start, end).toLowerCase()}.</div></div>
+                <div className="setuMetricCard"><div className="setuMetricLabel">Operations alerts</div><div className="setuMetricValue">{summary.overBudgetProjects + summary.nearBudgetProjects + summary.staleApprovals}</div><div className="setuMetricHint">{summary.overBudgetProjects} over budget • {summary.staleApprovals} stale approvals.</div></div>
               </div>
 
               <div className="analyticsSplit">

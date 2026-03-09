@@ -81,6 +81,7 @@ async function fetchPayPeriodStatus(period_start: string, period_end: string) {
 
 function ApprovalsInner() {
   const searchParams = useSearchParams();
+  const scope = searchParams.get("scope") || "all";
   const { loading: profLoading, profile, userId, error: profErr } = useProfile();
 
   const isAdmin = profile?.role === "admin";
@@ -349,15 +350,30 @@ function ApprovalsInner() {
       .sort((a, b) => (a.week_start === b.week_start ? a.user_id.localeCompare(b.user_id) : b.week_start.localeCompare(a.week_start)));
   }, [entries, profiles, search, showAllPending, weekStartISO, weekEndISO]);
 
+  const exceptionSummary = useMemo(() => {
+    const stale = groups.filter((group) => ((Date.now() - new Date(`${group.week_end}T00:00:00`).getTime()) / 86400000) > 2).length;
+    const missingTimesheets = Object.values(profiles).filter((profile) => !!profile && !groups.some((group) => group.user_id === profile.id)).length;
+    const overtime = groups.filter((group) => groupTotalHours(group) > 60 || groupDaysSummary(group).some(([, hours]) => hours > 10)).length;
+    const locked = groups.filter((group) => lockByRange[`${group.week_start}__${group.week_end}`]?.locked).length;
+    return { stale, missingTimesheets, overtime, locked };
+  }, [groups, profiles, lockByRange]);
+
+  const visibleGroups = useMemo(() => {
+    if (scope === "stale") return groups.filter((group) => ((Date.now() - new Date(`${group.week_end}T00:00:00`).getTime()) / 86400000) > 2);
+    if (scope === "overtime") return groups.filter((group) => groupTotalHours(group) > 60 || groupDaysSummary(group).some(([, hours]) => hours > 10));
+    if (scope === "locked") return groups.filter((group) => !!lockByRange[`${group.week_start}__${group.week_end}`]?.locked);
+    return groups;
+  }, [groups, scope, lockByRange]);
+
 const selectedEntryIds = useMemo(() => {
   const ids: string[] = [];
-  for (const g of groups) {
+  for (const g of visibleGroups) {
     if (selectedGroups[g.key]) {
       for (const e of g.entries) ids.push(e.id);
     }
   }
   return ids;
-}, [groups, selectedGroups]);
+}, [visibleGroups, selectedGroups]);
 
 async function approveSelected() {
   if (!selectedEntryIds.length) return;
@@ -382,7 +398,7 @@ async function approveSelected() {
 useEffect(() => {
   if (!profile || !userId) return;
   const uniqueRanges = Array.from(
-    new Set(groups.map((g) => `${g.week_start}__${g.week_end}`))
+    new Set(visibleGroups.map((g) => `${g.week_start}__${g.week_end}`))
   );
 
   if (uniqueRanges.length === 0) return;
@@ -409,16 +425,16 @@ useEffect(() => {
   return () => {
     cancelled = true;
   };
-}, [groups, profile, userId]);
+}, [visibleGroups, profile, userId]);
 
 
 
   const queueSummary = useMemo(() => {
-    const totalHours = groups.reduce((sum, group) => sum + group.entries.reduce((inner, entry) => inner + Number(entry.hours_worked || 0), 0), 0);
-    const uniquePeople = new Set(groups.map((group) => group.user_id)).size;
-    const lockedCount = groups.filter((group) => lockByRange[`${group.week_start}__${group.week_end}`]?.locked).length;
-    return { totalHours, uniquePeople, lockedCount, totalGroups: groups.length };
-  }, [groups, lockByRange]);
+    const totalHours = visibleGroups.reduce((sum, group) => sum + group.entries.reduce((inner, entry) => inner + Number(entry.hours_worked || 0), 0), 0);
+    const uniquePeople = new Set(visibleGroups.map((group) => group.user_id)).size;
+    const lockedCount = visibleGroups.filter((group) => lockByRange[`${group.week_start}__${group.week_end}`]?.locked).length;
+    return { totalHours, uniquePeople, lockedCount, totalGroups: visibleGroups.length };
+  }, [visibleGroups, lockByRange]);
 
   const headerRight = (
     <div className="apHeaderRight">
@@ -579,6 +595,14 @@ useEffect(() => {
         <div className="setuMetricCard"><div className="setuMetricLabel">Queue items</div><div className="setuMetricValue">{queueSummary.totalGroups}</div><div className="setuMetricHint">{queueSummary.uniquePeople} people across pending approvals</div></div>
         <div className="setuMetricCard"><div className="setuMetricLabel">Hours awaiting review</div><div className="setuMetricValue">{queueSummary.totalHours.toFixed(2)}</div><div className="setuMetricHint">Submitted work still pending manager signoff</div></div>
         <div className="setuMetricCard"><div className="setuMetricLabel">Locked ranges</div><div className="setuMetricValue">{queueSummary.lockedCount}</div><div className="setuMetricHint">Locked pay periods remain visible for context</div></div>
+        <div className="setuMetricCard"><div className="setuMetricLabel">Forecast blockers</div><div className="setuMetricValue">{exceptionSummary.stale + exceptionSummary.overtime + exceptionSummary.missingTimesheets}</div><div className="setuMetricHint">{exceptionSummary.stale} stale • {exceptionSummary.overtime} overtime • {exceptionSummary.missingTimesheets} missing</div></div>
+      </div>
+
+      <div className="setuFocusList" style={{ marginBottom: 14 }}>
+        <button className="setuFocusItem" onClick={() => window.location.href = '/approvals?scope=all'}><span>All approvals</span><strong>{groups.length}</strong></button>
+        <button className="setuFocusItem" onClick={() => window.location.href = '/approvals?scope=stale'}><span>Stale approvals</span><strong>{exceptionSummary.stale}</strong></button>
+        <button className="setuFocusItem" onClick={() => window.location.href = '/approvals?scope=overtime'}><span>Overtime signals</span><strong>{exceptionSummary.overtime}</strong></button>
+        <button className="setuFocusItem" onClick={() => window.location.href = '/approvals?scope=locked'}><span>Locked visible</span><strong>{exceptionSummary.locked}</strong></button>
       </div>
 
       {msg ? (
@@ -591,7 +615,7 @@ useEffect(() => {
         <div className="card cardPad" style={{ marginTop: 14 }}>
           <div className="muted">Loading approvals…</div>
         </div>
-      ) : groups.length === 0 ? (
+      ) : visibleGroups.length === 0 ? (
         <div className="card cardPad" style={{ marginTop: 14 }}>
           <div style={{ fontWeight: 950 }}>Nothing to approve</div>
           <div className="muted" style={{ marginTop: 6 }}>
@@ -600,7 +624,7 @@ useEffect(() => {
         </div>
       ) : (
         <div className="apGroups">
-          {groups.map((g) => {
+          {visibleGroups.map((g) => {
             const sample = g.entries[0];
             const rangeKey = `${g.week_start}__${g.week_end}`;
             const isLocked = !!lockByRange[rangeKey]?.locked;

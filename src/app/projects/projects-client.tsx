@@ -480,6 +480,7 @@ function closeCreate() {
         budgetAmount,
         hoursVariance: budgetHours > 0 ? actual.hours - budgetHours : 0,
         amountVariance: budgetAmount > 0 ? actual.amount - budgetAmount : 0,
+        forecastAmount: actual.amount + (actual.pending * (actual.hours > 0 ? actual.amount / Math.max(actual.hours, 1) : 0)),
       };
     });
 
@@ -488,13 +489,14 @@ function closeCreate() {
       acc.actualHours += row.actualHours;
       acc.budgetAmount += row.budgetAmount;
       acc.actualAmount += row.actualAmount;
+      acc.forecastAmount += row.forecastAmount;
       const state = budgetHealthState(row.actualAmount, row.budgetAmount, row.actualHours, row.budgetHours);
       if (row.budgetAmount > 0 || row.budgetHours > 0) acc.budgetedProjects += 1;
       if (state === "over") acc.overBudgetProjects += 1;
       if (state === "near") acc.nearBudgetProjects += 1;
       if (state === "no_budget") acc.noBudgetProjects += 1;
       return acc;
-    }, { budgetHours: 0, actualHours: 0, budgetAmount: 0, actualAmount: 0, budgetedProjects: 0, overBudgetProjects: 0, nearBudgetProjects: 0, noBudgetProjects: 0 });
+    }, { budgetHours: 0, actualHours: 0, budgetAmount: 0, actualAmount: 0, forecastAmount: 0, budgetedProjects: 0, overBudgetProjects: 0, nearBudgetProjects: 0, noBudgetProjects: 0 });
 
     return { rows, totals };
   }, [filteredProjects, actualsMap]);
@@ -1380,12 +1382,18 @@ function closeCreate() {
                 </FormField>
 
                 <div className="card cardPad" style={{ boxShadow: "none", background: "var(--panel)" }}>
-                  <div style={{ fontWeight: 900, marginBottom: 6 }}>Actuals in {rangeLabel(rangeStart, rangeEnd)}</div>
+                  <div style={{ fontWeight: 900, marginBottom: 6 }}>Project finance in {rangeLabel(rangeStart, rangeEnd)}</div>
                   <div className="muted" style={{ fontSize: 12 }}>
-                    {money((actualsMap[drawerProject.id]?.amount || 0), drawerProject.budget_currency || "USD")} • {(actualsMap[drawerProject.id]?.hours || 0).toFixed(2)} hrs
+                    Actual {money((actualsMap[drawerProject.id]?.amount || 0), drawerProject.budget_currency || "USD")} • {(actualsMap[drawerProject.id]?.hours || 0).toFixed(2)} hrs
+                  </div>
+                  <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                    Forecast {money((actualsMap[drawerProject.id]?.amount || 0) + ((actualsMap[drawerProject.id]?.pending || 0) * (((actualsMap[drawerProject.id]?.hours || 0) > 0 ? (actualsMap[drawerProject.id]?.amount || 0) / Math.max((actualsMap[drawerProject.id]?.hours || 0), 1) : 0))), drawerProject.budget_currency || "USD")} • {(actualsMap[drawerProject.id]?.pending || 0)} pending entries
                   </div>
                   <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
                     {budgetHealthLabel((actualsMap[drawerProject.id]?.amount || 0) - Number(drawerProject.budget_amount || 0), Number(drawerProject.budget_amount || 0) > 0)}
+                  </div>
+                  <div style={{ height: 10, background: "rgba(16,24,40,.08)", borderRadius: 999, overflow: "hidden", marginTop: 10 }}>
+                    <div style={{ height: "100%", width: `${Math.min(100, Math.max(6, Number(drawerProject.budget_amount || 0) > 0 ? ((actualsMap[drawerProject.id]?.amount || 0) / Number(drawerProject.budget_amount || 1)) * 100 : Number(drawerProject.budget_hours || 0) > 0 ? ((actualsMap[drawerProject.id]?.hours || 0) / Number(drawerProject.budget_hours || 1)) * 100 : 0))}%`, background: `var(--${(Number(drawerProject.budget_amount || 0) > 0 && (actualsMap[drawerProject.id]?.amount || 0) > Number(drawerProject.budget_amount || 0)) || (Number(drawerProject.budget_hours || 0) > 0 && (actualsMap[drawerProject.id]?.hours || 0) > Number(drawerProject.budget_hours || 0)) ? 'danger' : 'accent'})` }} />
                   </div>
                 </div>
               </div>

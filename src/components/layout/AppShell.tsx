@@ -37,6 +37,11 @@ type NavItem = {
   hideIf?: (role: string) => boolean;
 };
 
+type NavSection = {
+  label: string;
+  items: NavItem[];
+};
+
 function initials(name?: string) {
   const n = (name || "").trim();
   if (!n) return "U";
@@ -66,63 +71,47 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
   const orgName = profile?.org_name || "SETU GROUP";
   const isAdmin = role === "admin";
 
-  const navItems: NavItem[] = useMemo(
-    () =>
-      [
-        { label: "Home", href: "/dashboard", icon: <LayoutDashboard size={16} /> },
-        { label: "My work", href: "/timesheet", icon: <Clock3 size={16} /> },
-        {
-          label: "Approvals",
-          href: "/approvals",
-          icon: <CheckCircle2 size={16} />,
-          hideIf: (r: string) => r === "contractor",
-        },
-        { label: "Projects", href: "/projects", icon: <FolderKanban size={16} /> },
-        {
-          label: "People",
-          href: "/profiles",
-          icon: <Users size={16} />,
-          hideIf: (r: string) => r === "contractor",
-        },
-        {
-          label: "Payroll",
-          href: "/reports/payroll",
-          icon: <BadgeDollarSign size={16} />,
-          hideIf: (r: string) => r === "contractor",
-        },
-        {
-          label: "Analytics",
-          href: "/analytics",
-          icon: <ChartColumnBig size={16} />,
-          hideIf: (r: string) => r === "contractor",
-        },
-        {
-          label: "Payroll runs",
-          href: "/reports/payroll-runs",
-          icon: <FileText size={16} />,
-          hideIf: (r: string) => r !== "admin",
-        },
-        {
-          label: "Exports",
-          href: "/admin/exports",
-          icon: <Shield size={16} />,
-          hideIf: (r: string) => r !== "admin",
-        },
-        {
-          label: "Org Settings",
-          href: "/admin/org-settings",
-          icon: <Building2 size={16} />,
-          hideIf: (r: string) => r !== "admin",
-        },
-        {
-          label: "Billing",
-          href: "/admin/billing",
-          icon: <CreditCard size={16} />,
-          hideIf: (r: string) => r !== "admin",
-        },
-      ].filter((item) => !item.hideIf?.(role)),
-    [role]
-  );
+  const navSections: NavSection[] = useMemo(() => {
+    const sections: NavSection[] = [
+      {
+        label: "Operations",
+        items: [
+          { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard size={16} /> },
+          { label: "My work", href: "/timesheet", icon: <Clock3 size={16} /> },
+          { label: "Approvals", href: "/approvals", icon: <CheckCircle2 size={16} />, hideIf: (r: string) => r === "contractor" },
+        ],
+      },
+      {
+        label: "Organization",
+        items: [
+          { label: "Projects", href: "/projects", icon: <FolderKanban size={16} /> },
+          { label: "People", href: "/profiles", icon: <Users size={16} />, hideIf: (r: string) => r === "contractor" },
+        ],
+      },
+      {
+        label: "Finance",
+        items: [
+          { label: "Payroll", href: "/reports/payroll", icon: <BadgeDollarSign size={16} />, hideIf: (r: string) => r === "contractor" },
+          { label: "Analytics", href: "/analytics", icon: <ChartColumnBig size={16} />, hideIf: (r: string) => r === "contractor" },
+          { label: "Payroll runs", href: "/reports/payroll-runs", icon: <FileText size={16} />, hideIf: (r: string) => r !== "admin" },
+        ],
+      },
+      {
+        label: "Admin",
+        items: [
+          { label: "Activity", href: "/admin/activity", icon: <Shield size={16} />, hideIf: (r: string) => r !== "admin" },
+          { label: "Exports", href: "/admin/exports", icon: <Shield size={16} />, hideIf: (r: string) => r !== "admin" },
+          { label: "Org Settings", href: "/admin/org-settings", icon: <Building2 size={16} />, hideIf: (r: string) => r !== "admin" },
+          { label: "Billing", href: "/admin/billing", icon: <CreditCard size={16} />, hideIf: (r: string) => r !== "admin" },
+        ],
+      },
+    ];
+    return sections
+      .map((section) => ({ ...section, items: section.items.filter((item) => !item.hideIf?.(role)) }))
+      .filter((section) => section.items.length > 0);
+  }, [role]);
+
+  const navItems: NavItem[] = useMemo(() => navSections.flatMap((section) => section.items), [navSections]);
 
   function isActive(href: string) {
     if (!pathname) return false;
@@ -283,19 +272,22 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
           </button>
         </div>
 
-        <div className="mwSideSection">
-          {navItems.map((item) => (
-            <button
-              key={item.href}
-              type="button"
-              className={`mwSideItem ${isActive(item.href) ? "mwSideItemActive" : ""}`}
-              onClick={() => go(item.href)}
-            >
-              <span className="mwSideItemIcon">{item.icon}</span>
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </div>
+        {navSections.map((section) => (
+          <div className="mwSideSection" key={section.label}>
+            <div className="mwMenuTitle">{section.label}</div>
+            {section.items.map((item) => (
+              <button
+                key={item.href}
+                type="button"
+                className={`mwSideItem ${isActive(item.href) ? "mwSideItemActive" : ""}`}
+                onClick={() => go(item.href)}
+              >
+                <span className="mwSideItemIcon">{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+        ))}
       </aside>
 
       {mobileOpen && (
@@ -330,19 +322,22 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
 
             <div className="mwMenuTitle">Navigate</div>
 
-            <div className="mwSideSection">
-              {navItems.map((item) => (
-                <button
-                  key={item.href}
-                  type="button"
-                  className={`mwSideItem ${isActive(item.href) ? "mwSideItemActive" : ""}`}
-                  onClick={() => go(item.href)}
-                >
-                  <span className="mwSideItemIcon">{item.icon}</span>
-                  <span>{item.label}</span>
-                </button>
-              ))}
-            </div>
+            {navSections.map((section) => (
+              <div className="mwSideSection" key={section.label}>
+                <div className="mwMenuTitle">{section.label}</div>
+                {section.items.map((item) => (
+                  <button
+                    key={item.href}
+                    type="button"
+                    className={`mwSideItem ${isActive(item.href) ? "mwSideItemActive" : ""}`}
+                    onClick={() => go(item.href)}
+                  >
+                    <span className="mwSideItemIcon">{item.icon}</span>
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            ))}
 
             <div className="mwDrawerAccount">
               <div className="mwMenuTitle">Account</div>

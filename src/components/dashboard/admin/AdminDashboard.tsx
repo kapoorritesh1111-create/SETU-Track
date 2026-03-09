@@ -259,6 +259,16 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
     const nearBudgetProjects = topProjects.filter((project) => project.health === "near").length;
     const noBudgetProjects = topProjects.filter((project) => project.health === "no_budget").length;
     const totalBudgetAmount = topProjects.reduce((sum, project) => sum + Number(project.budgetAmount || 0), 0);
+    const pendingForecast = rows.filter((row) => row.status === "submitted").reduce((sum, row) => sum + Number(row.hours_worked || 0) * Number(row.hourly_rate_snapshot || 0), 0);
+    const projectedPayroll = currentPayroll + pendingForecast;
+    const staleApprovals = rows.filter((row) => row.status === "submitted" && ((Date.now() - new Date(`${row.entry_date}T00:00:00`).getTime()) / 86400000) > 2).length;
+    const dailyByUser = new Map<string, number>();
+    for (const row of rows) {
+      const key = `${row.user_id}__${row.entry_date}`;
+      dailyByUser.set(key, (dailyByUser.get(key) || 0) + Number(row.hours_worked || 0));
+    }
+    const overtimeDays = Array.from(dailyByUser.values()).filter((hours) => hours > 10).length;
+    const opsAlerts = overBudgetProjects + nearBudgetProjects + missingSubmissions + staleApprovals + peopleNeedingRates + overtimeDays;
 
     return {
       totalHours,
@@ -279,6 +289,11 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
       nearBudgetProjects,
       noBudgetProjects,
       totalBudgetAmount,
+      pendingForecast,
+      projectedPayroll,
+      staleApprovals,
+      overtimeDays,
+      opsAlerts,
     };
   }, [rows, previousRows, contractors, summary, previousSummary, projectBudgets]);
 
@@ -323,9 +338,10 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
     { label: "Active contractors", value: String(Number(summary?.active_contractors ?? contractors.length)), hint: `${insights.missingSubmissions} missing submissions` },
     { label: "Hours this period", value: insights.totalHours.toFixed(2), hint: `${insights.hoursChange >= 0 ? "+" : ""}${insights.hoursChange.toFixed(1)}% vs prior range` },
     { label: "Payroll this period", value: money(insights.currentPayroll), hint: `${insights.payrollChange >= 0 ? "+" : ""}${insights.payrollChange.toFixed(1)}% vs prior range` },
+    { label: "Forecast payroll", value: money(insights.projectedPayroll), hint: `${money(insights.pendingForecast)} still pending approvals` },
     { label: "Pending approvals", value: String(insights.pendingApprovals), hint: `${insights.submittedHours.toFixed(2)} hrs awaiting review` },
-    { label: "Projects active", value: String(insights.totalProjects), hint: `${events.length} export events this range` },
     { label: "Budget alerts", value: String(insights.overBudgetProjects), hint: `${insights.nearBudgetProjects} near budget • ${insights.noBudgetProjects} without budget` },
+    { label: "Operations signals", value: String(insights.opsAlerts), hint: `${insights.staleApprovals} stale • ${insights.overtimeDays} overtime day alerts` },
   ];
 
   if (!busy && rows.length === 0 && !message) {
@@ -397,6 +413,13 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
             <div className="setuMetricHint">{metric.hint}</div>
           </div>
         ))}
+      </div>
+
+      <div className="setuTrendSummary">
+        <div className="setuMetricCard"><div className="setuMetricLabel">Approved payroll</div><div className="setuMetricValue">{money(insights.currentPayroll)}</div><div className="setuMetricHint">Locked to approved work in the selected range.</div></div>
+        <div className="setuMetricCard"><div className="setuMetricLabel">Pending payroll</div><div className="setuMetricValue">{money(insights.pendingForecast)}</div><div className="setuMetricHint">Submitted work that still needs approval.</div></div>
+        <div className="setuMetricCard"><div className="setuMetricLabel">Projects at risk</div><div className="setuMetricValue">{insights.overBudgetProjects + insights.nearBudgetProjects}</div><div className="setuMetricHint">{insights.overBudgetProjects} over budget • {insights.nearBudgetProjects} near budget.</div></div>
+        <div className="setuMetricCard"><div className="setuMetricLabel">Operational integrity</div><div className="setuMetricValue">{insights.peopleNeedingRates + insights.staleApprovals + insights.overtimeDays}</div><div className="setuMetricHint">Missing rates, stale approvals, and overtime days.</div></div>
       </div>
 
       <div className="setuCommandGrid">
