@@ -21,6 +21,7 @@ import {
   CreditCard,
   Building2,
   ChartColumnBig,
+  BellRing,
 } from "lucide-react";
 
 type Props = {
@@ -93,6 +94,7 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
         items: [
           { label: "Payroll", href: "/reports/payroll", icon: <BadgeDollarSign size={16} />, hideIf: (r: string) => r === "contractor" },
           { label: "Analytics", href: "/analytics", icon: <ChartColumnBig size={16} />, hideIf: (r: string) => r === "contractor" },
+          { label: "Notifications", href: "/admin/notifications", icon: <BellRing size={16} />, hideIf: (r: string) => r === "contractor" },
           { label: "Payroll runs", href: "/reports/payroll-runs", icon: <FileText size={16} />, hideIf: (r: string) => r !== "admin" },
         ],
       },
