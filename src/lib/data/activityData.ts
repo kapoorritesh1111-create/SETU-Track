@@ -68,12 +68,12 @@ export async function getActivityData(client: SupabaseClient, orgId: string) {
     new Set(rawAuditRows.map((row) => row.actor_id).filter((value): value is string => Boolean(value)))
   );
 
-  let profileMap = new Map<string, { full_name: string | null; email: string | null }>();
+  let profileMap = new Map<string, { full_name: string | null }>();
 
   if (actorIds.length) {
     const { data: profileRows, error: profileErr } = await client
       .from("profiles")
-      .select("id,full_name,email")
+      .select("id,full_name")
       .in("id", actorIds);
 
     if (profileErr) {
@@ -81,7 +81,7 @@ export async function getActivityData(client: SupabaseClient, orgId: string) {
     }
 
     profileMap = new Map(
-      (profileRows || []).map((row: any) => [row.id, { full_name: row.full_name || null, email: row.email || null }])
+      (profileRows || []).map((row: any) => [row.id, { full_name: row.full_name || null }])
     );
   }
 
@@ -89,7 +89,7 @@ export async function getActivityData(client: SupabaseClient, orgId: string) {
     auditRows: rawAuditRows.map((row) => ({
       ...row,
       actor_name: row.actor_id ? profileMap.get(row.actor_id)?.full_name || null : null,
-      actor_email: row.actor_id ? profileMap.get(row.actor_id)?.email || null : null,
+      actor_email: null,
     })),
     exportRows: ((exportRes.data || []) as ActivityExportRow[]).map((row) => ({
       ...row,

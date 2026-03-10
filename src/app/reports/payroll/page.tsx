@@ -321,8 +321,8 @@ function PayrollReportPageContent() {
           </div>
           <div className="setuHeaderActions">
             <span className="pill">{payload?.range.start || start || "Range"} → {payload?.range.end || end || ""}</span>
-            <button className="pill" onClick={() => router.push(`/approvals?${sharedQuery}`)}>Open approvals queue</button>
-            <button className="pill" onClick={() => router.push(`/projects?${sharedQuery}`)}>Projects</button>
+            <Button variant="secondary" size="sm" onClick={() => router.push(`/approvals?${sharedQuery}`)}>Open approvals queue</Button>
+            <Button variant="secondary" size="sm" onClick={() => router.push(`/projects?${sharedQuery}`)}>Projects</Button>
           </div>
         </div>
 

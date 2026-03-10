@@ -15,6 +15,8 @@ import ActionMenu from "../../components/ui/ActionMenu";
 import SavedViews from "../../components/ui/SavedViews";
 import { Search } from "lucide-react";
 import DateRangeToolbar from "../../components/ui/DateRangeToolbar";
+import { SummaryBar } from "../../components/ui/SummaryBar";
+import { StatCard } from "../../components/ui/StatCard";
 import { presetLabel, presetToRange, type DatePreset } from "../../lib/dateRanges";
 
 type WeekStart = "sunday" | "monday";
@@ -928,34 +930,34 @@ function closeCreate() {
           </div>
         ) : null}
 
-        <div className="setuMetricGrid" style={{ marginBottom: 14 }}>
-          <div className="setuMetricCard">
-            <div className="setuMetricLabel">Budget coverage</div>
-            <div className="setuMetricValue">{financeSummary.totals.budgetedProjects}</div>
-            <div className="setuMetricHint">Projects with an active labor budget in {rangeLabel(rangeStart, rangeEnd)}.</div>
-          </div>
-          <div className="setuMetricCard">
-            <div className="setuMetricLabel">Actual labor this month</div>
-            <div className="setuMetricValue">{money(financeSummary.totals.actualAmount)}</div>
-            <div className="setuMetricHint">{financeSummary.totals.actualHours.toFixed(2)} hours logged in {presetLabel(preset, rangeStart, rangeEnd).toLowerCase()}.</div>
-          </div>
-          <div className="setuMetricCard">
-            <div className="setuMetricLabel">Budget vs actual</div>
-            <div className="setuMetricValue">{financeSummary.totals.budgetAmount > 0 ? money(financeSummary.totals.budgetAmount - financeSummary.totals.actualAmount) : "—"}</div>
-            <div className="setuMetricHint">{financeSummary.totals.budgetAmount > 0 || financeSummary.totals.budgetHours > 0 ? `${financeSummary.totals.overBudgetProjects} over budget • ${financeSummary.totals.nearBudgetProjects} near budget.` : "Add budgets to turn projects into a finance workspace."}</div>
-          </div>
-          <div className="setuMetricCard">
-            <div className="setuMetricLabel">Hours vs plan</div>
-            <div className="setuMetricValue">{financeSummary.totals.budgetHours > 0 ? `${financeSummary.totals.actualHours.toFixed(0)} / ${financeSummary.totals.budgetHours.toFixed(0)}` : `${financeSummary.totals.actualHours.toFixed(0)}`}</div>
-            <div className="setuMetricHint">Use budget hours to compare planned vs actual utilization.</div>
-          </div>
-        </div>
+        <SummaryBar className="projectSummaryBar">
+          <StatCard
+            label="Budget coverage"
+            value={financeSummary.totals.budgetedProjects}
+            hint={`Projects with an active labor budget in ${rangeLabel(rangeStart, rangeEnd)}.`}
+          />
+          <StatCard
+            label="Actual labor"
+            value={money(financeSummary.totals.actualAmount)}
+            hint={`${financeSummary.totals.actualHours.toFixed(2)} hours logged in ${presetLabel(preset, rangeStart, rangeEnd).toLowerCase()}.`}
+          />
+          <StatCard
+            label="Budget variance"
+            value={financeSummary.totals.budgetAmount > 0 ? money(financeSummary.totals.budgetAmount - financeSummary.totals.actualAmount) : "—"}
+            hint={financeSummary.totals.budgetAmount > 0 || financeSummary.totals.budgetHours > 0 ? `${financeSummary.totals.overBudgetProjects} over budget • ${financeSummary.totals.nearBudgetProjects} near budget.` : "Add budgets to turn projects into a finance workspace."}
+          />
+          <StatCard
+            label="Hours vs plan"
+            value={financeSummary.totals.budgetHours > 0 ? `${financeSummary.totals.actualHours.toFixed(0)} / ${financeSummary.totals.budgetHours.toFixed(0)}` : `${financeSummary.totals.actualHours.toFixed(0)}`}
+            hint="Use budget hours to compare planned vs actual utilization."
+          />
+        </SummaryBar>
 
         <div className="card cardPad" style={{ marginBottom: 14 }}>
           <div className="setuCardHeaderRow" style={{ marginBottom: 12 }}>
             <div>
               <div className="setuSectionTitle" style={{ fontSize: 20 }}>Project finance controls</div>
-              <div className="setuSectionHint">Use one shared period to compare planned vs actual labor across Projects, Analytics, Dashboard, and Payroll.</div>
+              <div className="setuSectionHint">Choose one finance period and keep Projects, Analytics, Dashboard, and Payroll aligned.</div>
             </div>
             <div className="muted" style={{ fontSize: 12 }}>{rangeLabel(rangeStart, rangeEnd)}</div>
           </div>

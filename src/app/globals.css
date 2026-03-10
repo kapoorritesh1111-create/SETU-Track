@@ -1526,7 +1526,7 @@ textarea.nativeControl {
   display: grid;
   grid-template-columns: 40px 1fr auto;
   gap: 12px;
-  align-items: start;
+  align-items: flex-start;
   padding: 14px 0;
   border-bottom: 1px solid var(--line);
 }
@@ -1591,7 +1591,7 @@ textarea.nativeControl {
   display: grid;
   grid-template-columns: 28px 1fr;
   gap: 10px;
-  align-items: start;
+  align-items: flex-start;
 }
 
 .setuGuideStepNo {
@@ -1602,4 +1602,42 @@ textarea.nativeControl {
   place-items: center;
   background: var(--panel-soft);
   font-weight: 800;
+}
+
+.tsMetricsRow,
+.tsSummaryBarRow,
+.setuMetricGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.projectSummaryBar {
+  margin-bottom: 14px;
+}
+.setuSegmented button {
+  border-radius: 999px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--setu-border);
+  background: var(--setu-surface);
+  color: var(--setu-indigo-900);
+  font-weight: 800;
+}
+.setuSegmented button:hover {
+  border-color: rgba(31,95,175,.28);
+}
+.setuSegmented .segActive {
+  background: linear-gradient(90deg, var(--setu-indigo-700), var(--setu-teal-500));
+  color: #fff;
+  border-color: transparent;
+}
+@media (max-width: 1120px) {
+  .tsMetricsRow,
+  .tsSummaryBarRow,
+  .setuMetricGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 720px) {
+  .tsMetricsRow,
+  .tsSummaryBarRow,
+  .setuMetricGrid { grid-template-columns: 1fr; }
 }

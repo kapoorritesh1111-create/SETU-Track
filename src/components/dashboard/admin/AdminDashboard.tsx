@@ -270,6 +270,21 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
     const overtimeDays = Array.from(dailyByUser.values()).filter((hours) => hours > 10).length;
     const opsAlerts = overBudgetProjects + nearBudgetProjects + missingSubmissions + staleApprovals + peopleNeedingRates + overtimeDays;
 
+
+    const contractorCostMap = new Map<string, { id: string; name: string; hours: number; cost: number }>();
+    for (const row of rows) {
+      const key = row.user_id;
+      const current = contractorCostMap.get(key) || { id: key, name: row.full_name || "Contractor", hours: 0, cost: 0 };
+      current.hours += Number(row.hours_worked || 0);
+      current.cost += Number(row.hours_worked || 0) * Number(row.hourly_rate_snapshot || 0);
+      contractorCostMap.set(key, current);
+    }
+    const topContractors = Array.from(contractorCostMap.values()).sort((a, b) => b.cost - a.cost).slice(0, 5);
+    const monthlyTrend = [
+      { label: "Prior payroll", value: previousPayroll, hint: rangeLabel(previousRange.start, previousRange.end) },
+      { label: "Approved payroll", value: currentPayroll, hint: rangeLabel(startDate, endDate) },
+      { label: "Forecast payroll", value: projectedPayroll, hint: `${money(pendingForecast)} pending` },
+    ];
     return {
       totalHours,
       approvedHours,
@@ -294,6 +309,8 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
       staleApprovals,
       overtimeDays,
       opsAlerts,
+      topContractors,
+      monthlyTrend,
     };
   }, [rows, previousRows, contractors, summary, previousSummary, projectBudgets]);
 
@@ -522,6 +539,51 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
                 </div>
               </button>
             ))}
+          </div>
+        </section>
+      </div>
+
+      <div className="setuCommandGrid setuCommandGridBottom">
+        <section className="setuSurfaceCard">
+          <div className="setuSectionLead">
+            <div>
+              <div className="setuSectionTitle">Top contractor cost drivers</div>
+              <div className="setuSectionHint">See which workers are driving labor cost in the active finance range.</div>
+            </div>
+          </div>
+          <div className="setuBarsList">
+            {insights.topContractors.map((person) => {
+              const width = insights.topContractors[0]?.cost ? Math.max(8, (person.cost / insights.topContractors[0].cost) * 100) : 8;
+              return (
+                <div className="setuBarBlock" key={person.id}>
+                  <div className="setuBarHead"><span>{person.name}</span><span>{money(person.cost)} • {person.hours.toFixed(2)} hrs</span></div>
+                  <div className="setuBarTrack"><div className="setuBarFill" style={{ width: `${width}%` }} /></div>
+                </div>
+              );
+            })}
+            {!insights.topContractors.length ? <div className="muted">No contractor cost drivers in this period yet.</div> : null}
+          </div>
+        </section>
+
+        <section className="setuSurfaceCard">
+          <div className="setuSectionLead">
+            <div>
+              <div className="setuSectionTitle">Monthly payroll trend</div>
+              <div className="setuSectionHint">Approved payroll, prior payroll, and current forecast in one view.</div>
+            </div>
+          </div>
+          <div className="setuBarsList">
+            {insights.monthlyTrend.map((item) => {
+              const max = Math.max(...insights.monthlyTrend.map((x) => Number(x.value || 0)), 1);
+              const width = Math.max(8, (Number(item.value || 0) / max) * 100);
+              return (
+                <div className="setuBarBlock" key={item.label}>
+                  <div className="setuBarHead"><span>{item.label}</span><span>{money(Number(item.value || 0))}</span></div>
+                  <div className="setuBarTrack"><div className="setuBarFill" style={{ width: `${width}%` }} /></div>
+                  <div className="setuProjectMeta">{item.hint}</div>
+                </div>
+              );
+            })}
           </div>
         </section>
       </div>
