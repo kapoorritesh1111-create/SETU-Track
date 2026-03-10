@@ -61,6 +61,21 @@ What should work end-to-end in this baseline:
 - Admin Export Center: `/admin/exports` (audit log + receipt drill-in)
 
 See `docs/RELEASE_CHECKLIST.md` for the full completed list + verification steps.
+
+## 2026-03-09 Phase 3A — Operations Cockpit + Data Trust + Product Polish
+
+Included in this repo package:
+- dashboard upgraded with a shared operations signal row for approval backlog, missing timesheets, rate coverage, and budget coverage
+- projects upgraded with risk summary cards and a top-projects-at-risk management queue
+- approvals refined into a clearer exception workspace with stale / long-hours / missing-note cues
+- analytics upgraded with payroll variance, contractor concentration, and budget coverage signals
+- activity timeline polished with stronger management summaries and shared formatting behavior
+- shared `src/lib/format.ts` introduced to reduce money/date formatting drift across pages
+
+See:
+- `docs/PHASE_3A_RELEASE_2026-03-09.md`
+- `docs/PHASE_3A_QA_CHECKLIST_2026-03-09.md`
+
 ## Run locally
 
 ```bash
@@ -238,3 +253,17 @@ The current baseline includes a platform alignment pass focused on:
 - query and table usage guidance
 
 See `docs/PHASE_2J_PLATFORM_ALIGNMENT.md` for details.
+
+
+## Release status
+
+- **Locked baseline:** Phase 3A
+- **Current working branch target:** Phase 3B-R1
+- **Release method:** smaller, build-safer increments from the Phase 3A baseline
+
+### Phase 3B-R1 scope
+- shared ops signal helper
+- dashboard action center on existing route
+- analytics actionable signals on existing route
+- no new notifications route yet
+- no nav expansion yet
