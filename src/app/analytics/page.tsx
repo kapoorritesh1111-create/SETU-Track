@@ -202,7 +202,28 @@ function AnalyticsPageContent() {
       exportsCount: 0,
     });
 
-    return { totalHours, approvedHours, submittedHours, totalCost, people, projects, hoursDelta, costDelta, byProject, byPerson, contractorConcentration, budgetedProjects: budgetedProjects.length, overBudgetProjects: overBudgetProjects.length, nearBudgetProjects: nearBudgetProjects.length, totalBudgetAmount, pendingForecast, projectedPayroll, staleApprovals, opsNotifications };
+    return { 
+  totalHours, 
+  approvedHours, 
+  submittedHours, 
+  totalCost, 
+  people, 
+  projects, 
+  hoursDelta, 
+  costDelta,
+  payrollChange: costDelta,   // <-- ADD THIS LINE
+  byProject, 
+  byPerson, 
+  contractorConcentration, 
+  budgetedProjects: budgetedProjects.length, 
+  overBudgetProjects: overBudgetProjects.length, 
+  nearBudgetProjects: nearBudgetProjects.length, 
+  totalBudgetAmount, 
+  pendingForecast, 
+  projectedPayroll, 
+  staleApprovals, 
+  opsNotifications 
+};
   }, [contractors, end, projectBudgets, rows, previousRows, runs, start]);
 
   const barMax = Math.max(1, ...summary.byProject.map((item) => item.cost), ...summary.byPerson.map((item) => item.hours));
