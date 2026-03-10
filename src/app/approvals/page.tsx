@@ -5,7 +5,7 @@ import RequireOnboarding from "../../components/auth/RequireOnboarding";
 import AppShell from "../../components/layout/AppShell";
 import { apiJson } from "../../lib/api/client";
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../../lib/supabaseBrowser";
 import { useProfile } from "../../lib/useProfile";
 import { addDays, parseISODate, startOfWeekSunday, toISODate, weekRangeLabel } from "../../lib/date";
@@ -61,6 +61,31 @@ function normalize(s: string) {
   return (s || "").trim().toLowerCase();
 }
 
+
+type ApprovalPrimaryState = "blocked" | "high_review" | "needs_context" | "ready";
+
+function approvalPrimaryState(flags: { stale: boolean; overtime: boolean; missingNotes: number }, isLocked: boolean): ApprovalPrimaryState {
+  if (isLocked) return "blocked";
+  if (flags.stale || flags.overtime) return "high_review";
+  if (flags.missingNotes > 0) return "needs_context";
+  return "ready";
+}
+
+function approvalStateLabel(state: ApprovalPrimaryState) {
+  if (state === "blocked") return "Blocked";
+  if (state === "high_review") return "High review";
+  if (state === "needs_context") return "Needs context";
+  return "Ready";
+}
+
+function approvalRecommendation(flags: { stale: boolean; overtime: boolean; missingNotes: number }, isLocked: boolean) {
+  if (isLocked) return "Locked pay period. Review for context only.";
+  if (flags.stale) return "Stale submitted entries need review before payroll close.";
+  if (flags.overtime) return "One or more days exceed the expected hours threshold.";
+  if (flags.missingNotes > 0) return `${flags.missingNotes} line${flags.missingNotes === 1 ? "" : "s"} missing notes.`;
+  return "Ready to approve.";
+}
+
 async function getAccessToken() {
   const { data, error } = await supabase.auth.getSession();
   if (error) throw error;
@@ -82,6 +107,7 @@ async function fetchPayPeriodStatus(period_start: string, period_end: string) {
 
 function ApprovalsInner() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const scope = searchParams.get("scope") || "all";
   const { loading: profLoading, profile, userId, error: profErr } = useProfile();
 
@@ -112,6 +138,13 @@ function ApprovalsInner() {
   // Reject drawer
   const [rejecting, setRejecting] = useState<Group | null>(null);
   const [rejectReason, setRejectReason] = useState<string>("");
+
+
+  function goScope(nextScope: string) {
+    const qs = new URLSearchParams(searchParams.toString());
+    qs.set("scope", nextScope);
+    router.push(`/approvals?${qs.toString()}`);
+  }
 
   useEffect(() => {
     if (!userId || !profile || !isManagerOrAdmin) return;
@@ -627,35 +660,18 @@ useEffect(() => {
         <div className="setuMetricCard"><div className="setuMetricLabel">Forecast blockers</div><div className="setuMetricValue">{approvalSignals.blockerCount}</div><div className="setuMetricHint">{approvalSignals.staleRows.length} stale rows • {approvalSignals.overtimeRows.length} long-hour days • {approvalSignals.missingTimesheets.length} missing</div></div>
       </div>
 
-      <div className="setuFocusList" style={{ marginBottom: 14 }}>
-        <button className="setuFocusItem" onClick={() => window.location.href = '/approvals?scope=all'}><span>All approvals</span><strong>{groups.length}</strong></button>
-        <button className="setuFocusItem" onClick={() => window.location.href = '/approvals?scope=stale'}><span>Stale approvals</span><strong>{approvalSignals.staleRows.length}</strong></button>
-        <button className="setuFocusItem" onClick={() => window.location.href = '/approvals?scope=overtime'}><span>Overtime signals</span><strong>{approvalSignals.overtimeRows.length}</strong></button>
-        <button className="setuFocusItem" onClick={() => window.location.href = '/approvals?scope=locked'}><span>Locked visible</span><strong>{exceptionSummary.locked}</strong></button>
-        <button className="setuFocusItem" onClick={() => window.location.href = '/approvals?scope=all'}><span>No-note groups</span><strong>{approvalSignals.missingNotesCount}</strong></button>
-      </div>
-
-      <div className="setuSignalGrid" style={{ marginBottom: 14 }}>
-        <div className="setuSignalCard"><div className="setuSignalLabel">Manager queue</div><strong>{queueSummary.totalGroups}</strong><span>Grouped approvals by person and week for faster exception handling.</span></div>
-        <div className="setuSignalCard"><div className="setuSignalLabel">Stale submitted rows</div><strong>{approvalSignals.staleRows.length}</strong><span>Submitted entries older than the approval SLA and likely to delay close.</span></div>
-        <div className="setuSignalCard"><div className="setuSignalLabel">Long-hour anomalies</div><strong>{approvalSignals.overtimeRows.length}</strong><span>Day-level signals above 10 hours or week-level signals above 60 hours.</span></div>
-        <div className="setuSignalCard"><div className="setuSignalLabel">Missing timesheets</div><strong>{approvalSignals.missingTimesheets.length}</strong><span>Active people in queue scope with no submitted work in the current range.</span></div>
-        <div className="setuSignalCard"><div className="setuSignalLabel">Missing notes</div><strong>{approvalSignals.missingNotesCount}</strong><span>Queued groups with at least one line that has no manager-facing note.</span></div>
-        <div className="setuSignalCard"><div className="setuSignalLabel">Payroll blockers</div><strong>{approvalSignals.blockerCount + exceptionSummary.locked}</strong><span>Stale rows, anomaly rows, missing timesheets, plus locked periods visible in queue.</span></div>
-      </div>
-
       <div className="card cardPad" style={{ marginBottom: 14 }}>
         <div className="setuCardHeaderRow" style={{ marginBottom: 12 }}>
           <div>
             <div className="setuSectionTitle" style={{ fontSize: 18 }}>Approval review priorities</div>
-            <div className="setuSectionHint">Use the queue like an exception workspace: clear stale items first, then anomalies, then missing context.</div>
+            <div className="setuSectionHint">One action strip only: clear stale items first, then anomaly days, then missing context.</div>
           </div>
         </div>
         <div className="setuFocusList">
-          <button className="setuFocusItem" onClick={() => window.location.href = '/approvals?scope=stale'}><span>Clear stale items</span><strong>{approvalSignals.staleRows.length}</strong></button>
-          <button className="setuFocusItem" onClick={() => window.location.href = '/approvals?scope=overtime'}><span>Review anomaly days</span><strong>{approvalSignals.overtimeRows.length}</strong></button>
-          <button className="setuFocusItem" onClick={() => window.location.href = '/approvals?scope=all'}><span>Request missing timesheets</span><strong>{approvalSignals.missingTimesheets.length}</strong></button>
-          <button className="setuFocusItem" onClick={() => window.location.href = '/approvals?scope=locked'}><span>Watch locked ranges</span><strong>{exceptionSummary.locked}</strong></button>
+          <button className="setuFocusItem" onClick={() => goScope('stale')}><span>Review stale first</span><strong>{approvalSignals.staleRows.length}</strong></button>
+          <button className="setuFocusItem" onClick={() => goScope('overtime')}><span>Review anomaly days</span><strong>{approvalSignals.overtimeRows.length}</strong></button>
+          <button className="setuFocusItem" onClick={() => goScope('all')}><span>Check missing context</span><strong>{approvalSignals.missingNotesCount}</strong></button>
+          <button className="setuFocusItem" onClick={() => goScope('locked')}><span>Watch locked ranges</span><strong>{exceptionSummary.locked}</strong></button>
         </div>
       </div>
 
@@ -673,7 +689,11 @@ useEffect(() => {
         <div className="card cardPad" style={{ marginTop: 14 }}>
           <div style={{ fontWeight: 950 }}>Nothing to approve</div>
           <div className="muted" style={{ marginTop: 6 }}>
-            {isAdmin ? "No submitted time entries in the selected scope." : "No submitted time entries from your direct reports in the selected scope."}
+            {!groups.length
+              ? (isAdmin ? "No submitted entries are waiting for review right now." : "No direct-report entries are waiting for review right now.")
+              : scope !== "all"
+                ? "No approval groups match the current filter. Try returning to all approvals."
+                : "The current queue is clear for the selected range."}
           </div>
         </div>
       ) : (
@@ -686,6 +706,8 @@ useEffect(() => {
             const isOpen = !!expanded[g.key];
             const days = groupDaysSummary(g);
             const flags = groupFlags(g);
+            const primaryState = approvalPrimaryState(flags, isLocked);
+            const recommendation = approvalRecommendation(flags, isLocked);
 
             return (
               <section key={g.key} className="card cardPad apGroupCard">
@@ -696,12 +718,11 @@ useEffect(() => {
                       <span style={{ display: "inline-flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                         <span>Week: {g.week_start} → {g.week_end} • {g.entries.length} entries</span>
                         {isLocked ? <span className="badge badgeLocked">Locked</span> : <span className="badge">Open</span>}
-                        {flags.stale ? <span className="pill warn">Stale</span> : null}
-                        {flags.overtime ? <span className="pill warn">Long hours</span> : null}
-                        {flags.missingNotes > 0 ? <span className="pill">{flags.missingNotes} no-note</span> : null}
-                        {!isLocked && (flags.stale || flags.overtime) ? <span className="pill">Needs review first</span> : null}
+                        <span className={`pill ${primaryState === "blocked" || primaryState === "high_review" ? "warn" : primaryState === "ready" ? "ok" : ""}`}>{approvalStateLabel(primaryState)}</span>
+                        {flags.missingNotes > 0 && primaryState !== "needs_context" ? <span className="pill">{flags.missingNotes} no-note</span> : null}
                       </span>
                     </div>
+                    <div className="setuSectionHint" style={{ marginTop: 6 }}>{recommendation}</div>
 
                     <div className="apMini">
                       {days.map(([d, h]) => (
@@ -730,7 +751,7 @@ useEffect(() => {
 
                     <div className="apGroupActions">
                       <button className="btn btnSecondary btnSm" onClick={() => setExpanded((p) => ({ ...p, [g.key]: !p[g.key] }))} disabled={busyKey === g.key} type="button">
-                        {isOpen ? "Hide details" : "View details"}
+                        {isOpen ? "Hide details" : (primaryState === "ready" ? "View details" : "Review details")}
                       </button>
                       <button
                         className="btn btnPrimary"

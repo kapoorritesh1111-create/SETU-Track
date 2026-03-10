@@ -275,13 +275,12 @@ function AnalyticsPageContent() {
 
               <div className="analyticsSplit">
                 <div className="analyticsPanel">
-                  <div className="setuCardHeaderRow"><div><div className="setuSectionTitle" style={{ fontSize: 20 }}>Actionable signals</div><div className="setuSectionHint">Shared ops signals from the command center, kept route-safe inside the existing analytics workspace.</div></div><Button variant="secondary" onClick={() => (window.location.href = "/dashboard")}>Dashboard</Button></div>
-                  <div className="setuFocusList" style={{ marginBottom: 18 }}>
-                    {summary.opsNotifications.length ? summary.opsNotifications.slice(0, 4).map((item) => (
-                      <button className="setuFocusItem" key={item.id} onClick={() => (window.location.href = item.href)}><span>{item.title}</span><strong>{severityLabel(item.severity)} • {item.metric}</strong></button>
-                    )) : (
-                      <button className="setuFocusItem" onClick={() => (window.location.href = "/reports/payroll")}><span>Payroll workspace</span><strong>Stable</strong></button>
-                    )}
+                  <div className="setuCardHeaderRow"><div><div className="setuSectionTitle" style={{ fontSize: 20 }}>Current period interpretation</div><div className="setuSectionHint">Analytics should explain change, not become another operations queue.</div></div><Button variant="secondary" onClick={() => (window.location.href = "/dashboard")}>Dashboard</Button></div>
+                  <div className="setuMiniTable" style={{ marginBottom: 18 }}>
+                    <div className="setuMiniRow"><span>Payroll trend vs prior period</span><strong>{summary.payrollChange >= 0 ? "+" : ""}{summary.payrollChange.toFixed(1)}%</strong></div>
+                    <div className="setuMiniRow"><span>Contractor concentration</span><strong>{summary.contractorConcentration.toFixed(0)}%</strong></div>
+                    <div className="setuMiniRow"><span>Projects at risk</span><strong>{summary.overBudgetProjects + summary.nearBudgetProjects}</strong></div>
+                    <div className="setuMiniRow"><span>Budget coverage</span><strong>{summary.totalBudgetAmount > 0 ? `${Math.min(999, (summary.totalCost / summary.totalBudgetAmount) * 100).toFixed(0)}%` : '—'}</strong></div>
                   </div>
                   <div className="setuCardHeaderRow"><div><div className="setuSectionTitle" style={{ fontSize: 20 }}>Project labor mix</div><div className="setuSectionHint">Budget-aware labor mix for the same project health layer used by the command center.</div></div><Button variant="secondary" onClick={() => (window.location.href = "/projects")}>Projects</Button></div>
                   <div className="analyticsBars">
@@ -348,11 +347,6 @@ function AnalyticsPageContent() {
                       ))}
                     </div>
                   ) : null}
-                  <div className="setuFocusList">
-                    <button className="setuFocusItem" onClick={() => (window.location.href = "/dashboard")}><span>Command Center</span><strong>Open</strong></button>
-                    <button className="setuFocusItem" onClick={() => (window.location.href = "/approvals?scope=all")}><span>Approvals queue</span><strong>{summary.submittedHours.toFixed(2)} hrs</strong></button>
-                    <button className="setuFocusItem" onClick={() => (window.location.href = `/reports/payroll?preset=${encodeURIComponent(preset)}&start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`)}><span>Payroll report</span><strong>{formatMoney(summary.totalCost)}</strong></button>
-                  </div>
                 </div>
               </div>
             </>

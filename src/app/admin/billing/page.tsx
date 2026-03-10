@@ -35,7 +35,7 @@ function AdminBillingInner() {
   return (
     <AppShell
       title="Billing"
-      subtitle="Stripe-ready placeholder (Phase 3 baseline)"
+      subtitle="Billing setup and readiness"
       right={
         <a className="pill" href="/docs" style={{ textDecoration: "none" }}>
           Docs <ExternalLink size={14} style={{ marginLeft: 6 }} />
@@ -59,7 +59,7 @@ function AdminBillingInner() {
             </div>
 
             <div className="muted" style={{ marginTop: 10 }}>
-              This screen is intentionally a placeholder so we can connect Stripe without reworking the Admin UX later.
+              This page stays intentionally light until subscription billing is connected.
             </div>
 
             <div className="row" style={{ gap: 10, marginTop: 14, flexWrap: "wrap" }}>
@@ -79,7 +79,7 @@ function AdminBillingInner() {
             </div>
 
             <div className="muted">
-              Planned fields (not persisted yet in this baseline):
+              Planned billing fields:
               <ul style={{ marginTop: 8, marginBottom: 0 }}>
                 <li>stripe_customer_id</li>
                 <li>stripe_subscription_id</li>
@@ -89,8 +89,7 @@ function AdminBillingInner() {
             </div>
 
             <div className="muted" style={{ marginTop: 12 }}>
-              Next step: add an <code>org_billing</code> table + webhook handlers, then wire “Manage subscription” to Stripe
-              Customer Portal.
+              Next step: add an <code>org_billing</code> table and webhook handlers, then connect the subscription controls.
             </div>
           </Card>
         </div>

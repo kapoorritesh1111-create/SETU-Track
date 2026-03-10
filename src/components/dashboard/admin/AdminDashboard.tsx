@@ -362,19 +362,8 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
     { label: "Active contractors", value: String(Number(summary?.active_contractors ?? contractors.length)), hint: `${insights.missingSubmissions} missing submissions` },
     { label: "Hours this period", value: insights.totalHours.toFixed(2), hint: `${insights.hoursChange >= 0 ? "+" : ""}${insights.hoursChange.toFixed(1)}% vs prior range` },
     { label: "Payroll this period", value: formatMoney(insights.currentPayroll), hint: `${insights.payrollChange >= 0 ? "+" : ""}${insights.payrollChange.toFixed(1)}% vs prior range` },
-    { label: "Forecast payroll", value: formatMoney(insights.projectedPayroll), hint: `${formatMoney(insights.pendingForecast)} still pending approvals` },
     { label: "Pending approvals", value: String(insights.pendingApprovals), hint: `${insights.submittedHours.toFixed(2)} hrs awaiting review` },
-    { label: "Budget alerts", value: String(insights.overBudgetProjects), hint: `${insights.nearBudgetProjects} near budget • ${insights.noBudgetProjects} without budget` },
-    { label: "Operations signals", value: String(insights.opsAlerts), hint: `${insights.staleApprovals} stale • ${insights.overtimeDays} overtime day alerts` },
   ];
-
-  const notifications = buildOpsNotifications({
-    contractors,
-    rows,
-    budgets: projectBudgets,
-    periodLocked,
-    exportsCount: events.length,
-  });
 
   if (!busy && rows.length === 0 && !message) {
     return (
@@ -432,7 +421,6 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
           <div className="setuHeaderActions">
             <button className="pill" onClick={() => router.push(`/analytics?preset=${encodeURIComponent(preset)}&start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}`)}>Analytics</button>
             <button className="pill" onClick={() => router.push(`/approvals?scope=all`)}>Review approvals</button>
-            <button className="pill" onClick={() => router.push(`/admin/notifications?preset=${encodeURIComponent(preset)}&start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}`)}>Notifications</button>
             <button className="btnPrimary" onClick={() => router.push(`/reports/payroll?preset=${encodeURIComponent(preset)}&start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}`)}>Open payroll report</button>
           </div>
         </div>
@@ -448,34 +436,11 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
         ))}
       </div>
 
-      <div className="setuTrendSummary">
-        <div className="setuMetricCard"><div className="setuMetricLabel">Approved payroll</div><div className="setuMetricValue">{formatMoney(insights.currentPayroll)}</div><div className="setuMetricHint">Locked to approved work in the selected range.</div></div>
-        <div className="setuMetricCard"><div className="setuMetricLabel">Pending payroll</div><div className="setuMetricValue">{formatMoney(insights.pendingForecast)}</div><div className="setuMetricHint">Submitted work that still needs approval.</div></div>
-        <div className="setuMetricCard"><div className="setuMetricLabel">Projects at risk</div><div className="setuMetricValue">{insights.overBudgetProjects + insights.nearBudgetProjects}</div><div className="setuMetricHint">{insights.overBudgetProjects} over budget • {insights.nearBudgetProjects} near budget.</div></div>
-        <div className="setuMetricCard"><div className="setuMetricLabel">Operational integrity</div><div className="setuMetricValue">{insights.peopleNeedingRates + insights.staleApprovals + insights.overtimeDays}</div><div className="setuMetricHint">Missing rates, stale approvals, and overtime days.</div></div>
-      </div>
-
-      <div className="setuSignalGrid">
-        <div className="setuSignalCard">
-          <div className="setuSignalLabel">Approval backlog</div>
-          <strong>{insights.pendingApprovals}</strong>
-          <span>{insights.submittedHours.toFixed(2)} hours are still waiting for signoff.</span>
-        </div>
-        <div className="setuSignalCard">
-          <div className="setuSignalLabel">Missing timesheets</div>
-          <strong>{insights.missingSubmissions}</strong>
-          <span>Active contractors with no entries in {presetLabel(preset, startDate, endDate).toLowerCase()}.</span>
-        </div>
-        <div className="setuSignalCard">
-          <div className="setuSignalLabel">Rate coverage</div>
-          <strong>{insights.peopleNeedingRates}</strong>
-          <span>Contractors still missing an hourly rate snapshot or default rate.</span>
-        </div>
-        <div className="setuSignalCard">
-          <div className="setuSignalLabel">Budget coverage</div>
-          <strong>{insights.totalBudgetAmount > 0 ? `${Math.min(999, insights.budgetCoveragePct).toFixed(0)}%` : '—'}</strong>
-          <span>{insights.totalBudgetAmount > 0 ? `${formatMoney(insights.currentPayroll)} against ${formatMoney(insights.totalBudgetAmount)}` : 'Add project budgets to unlock burn tracking.'}</span>
-        </div>
+      <div className="setuFocusList" style={{ marginTop: 14, marginBottom: 14 }}>
+        <button className="setuFocusItem" onClick={() => router.push(`/approvals?scope=all`)}><span>Approval backlog</span><strong>{insights.pendingApprovals}</strong></button>
+        <button className="setuFocusItem" onClick={() => router.push(`/projects`)}><span>Projects at risk</span><strong>{insights.overBudgetProjects + insights.nearBudgetProjects}</strong></button>
+        <button className="setuFocusItem" onClick={() => router.push(`/reports/payroll?preset=${encodeURIComponent(preset)}&start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}`)}><span>Pending payroll</span><strong>{formatMoney(insights.pendingForecast)}</strong></button>
+        <button className="setuFocusItem" onClick={() => router.push(`/admin/notifications`)}><span>Operational integrity</span><strong>{insights.peopleNeedingRates + insights.staleApprovals + insights.overtimeDays}</strong></button>
       </div>
 
       <div className="setuCommandGrid">
@@ -594,79 +559,6 @@ export default function AdminDashboard({ orgId }: { orgId: string; userId: strin
       </div>
 
       <div className="setuCommandGrid setuCommandGridBottom">
-        <section className="setuSurfaceCard">
-          <div className="setuSectionLead">
-            <div>
-              <div className="setuSectionTitle">Top contractor cost drivers</div>
-              <div className="setuSectionHint">See which workers are driving labor cost in the active finance range.</div>
-            </div>
-          </div>
-          <div className="setuBarsList">
-            {insights.topContractors.map((person) => {
-              const width = insights.topContractors[0]?.cost ? Math.max(8, (person.cost / insights.topContractors[0].cost) * 100) : 8;
-              return (
-                <div className="setuBarBlock" key={person.id}>
-                  <div className="setuBarHead"><span>{person.name}</span><span>{formatMoney(person.cost)} • {person.hours.toFixed(2)} hrs</span></div>
-                  <div className="setuBarTrack"><div className="setuBarFill" style={{ width: `${width}%` }} /></div>
-                </div>
-              );
-            })}
-            {!insights.topContractors.length ? <div className="muted">No contractor cost drivers in this period yet.</div> : null}
-          </div>
-        </section>
-
-        <section className="setuSurfaceCard">
-          <div className="setuSectionLead">
-            <div>
-              <div className="setuSectionTitle">Monthly payroll trend</div>
-              <div className="setuSectionHint">Approved payroll, prior payroll, and current forecast in one view.</div>
-            </div>
-          </div>
-          <div className="setuBarsList">
-            {insights.monthlyTrend.map((item) => {
-              const max = Math.max(...insights.monthlyTrend.map((x) => Number(x.value || 0)), 1);
-              const width = Math.max(8, (Number(item.value || 0) / max) * 100);
-              return (
-                <div className="setuBarBlock" key={item.label}>
-                  <div className="setuBarHead"><span>{item.label}</span><span>{formatMoney(Number(item.value || 0))}</span></div>
-                  <div className="setuBarTrack"><div className="setuBarFill" style={{ width: `${width}%` }} /></div>
-                  <div className="setuProjectMeta">{item.hint}</div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      </div>
-
-      <div className="setuCommandGrid setuCommandGridBottom">
-        <section className="setuSurfaceCard">
-          <div className="setuSectionLead">
-            <div>
-              <div className="setuSectionTitle">Action center</div>
-              <div className="setuSectionHint">Use this priority queue to trigger reminders, clear blockers, and complete finance handoff.</div>
-            </div>
-            <button className="pill" onClick={() => router.push(`/admin/notifications?preset=${encodeURIComponent(preset)}&start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}`)}>Open notifications</button>
-          </div>
-          <div className="setuNotificationList">
-            {notifications.slice(0, 5).map((item) => (
-              <button key={item.id} className={`setuNotificationItem severity-${item.severity}`} onClick={() => router.push(item.href)}>
-                <div style={{ display: "grid", gap: 6, flex: 1, minWidth: 0 }}>
-                  <div className="setuNotificationHead">
-                    <span className="setuNotificationTitle">{item.title}</span>
-                    <span className={`setuNotificationBadge severity-${item.severity}`}>{severityLabel(item.severity)}</span>
-                  </div>
-                  <div className="setuProjectMeta">{item.body}</div>
-                </div>
-                <div className="setuNotificationMeta">
-                  <strong>{item.metric}</strong>
-                  <span>Open →</span>
-                </div>
-              </button>
-            ))}
-            {!notifications.length ? <div className="muted">No active operational alerts for this period.</div> : null}
-          </div>
-        </section>
-
         <section className="setuSurfaceCard">
           <div className="setuSectionLead">
             <div>

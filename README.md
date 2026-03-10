@@ -287,3 +287,7 @@ This branch adds the dedicated notifications workspace after the smaller R1 and 
 - approvals and projects quick links into notifications
 - finance nav expansion only after the signal model already existed
 - no schema migrations
+
+
+## Phase 3C
+Current branch adds a simplification and decision-hierarchy pass across Dashboard, Approvals, Projects, Analytics, and lighter Admin surfaces.

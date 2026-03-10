@@ -181,7 +181,7 @@ export default function AdminNotificationsPage() {
                 <div className="setuSectionLead">
                   <div>
                     <div className="setuSectionTitle">Notification queue</div>
-                    <div className="setuSectionHint">One workspace for the highest-value follow-up actions already surfacing across dashboard, projects, approvals, and analytics.</div>
+                    <div className="setuSectionHint">A concise triage view for the follow-up actions that matter most in the current range.</div>
                   </div>
                 </div>
 
@@ -224,27 +224,11 @@ export default function AdminNotificationsPage() {
                   </div>
                 </div>
 
-                <div className="setuSignalGrid">
-                  <div className="setuSignalCard">
-                    <div className="setuSignalLabel">Top issue</div>
-                    <strong>{summary.top?.title || "No open blockers"}</strong>
-                    <span>{summary.top ? `${severityLabel(summary.top.severity)} priority • ${summary.top.metric}` : "Operations are clear for the current range."}</span>
-                  </div>
-                  <div className="setuSignalCard">
-                    <div className="setuSignalLabel">Critical pressure</div>
-                    <strong>{summary.critical}</strong>
-                    <span>{summary.critical ? "Resolve these first to reduce payroll and finance risk." : "No critical issues in the queue."}</span>
-                  </div>
-                  <div className="setuSignalCard">
-                    <div className="setuSignalLabel">Budget + approvals</div>
-                    <strong>{notifications.filter((item) => item.area === "projects" || item.area === "approvals").length}</strong>
-                    <span>Combined project and review signals often drive payroll delay.</span>
-                  </div>
-                  <div className="setuSignalCard">
-                    <div className="setuSignalLabel">Rate + people audit</div>
-                    <strong>{notifications.filter((item) => item.area === "people" || item.area === "rates").length}</strong>
-                    <span>Use this to catch missing submissions and weak rate baselines.</span>
-                  </div>
+                <div className="setuMiniTable">
+                  <div className="setuMiniRow"><span>Top issue</span><strong>{summary.top?.title || "No open blockers"}</strong></div>
+                  <div className="setuMiniRow"><span>Critical pressure</span><strong>{summary.critical}</strong></div>
+                  <div className="setuMiniRow"><span>Budget + approvals</span><strong>{notifications.filter((item) => item.area === "projects" || item.area === "approvals").length}</strong></div>
+                  <div className="setuMiniRow"><span>Rate + people audit</span><strong>{notifications.filter((item) => item.area === "people" || item.area === "rates").length}</strong></div>
                 </div>
 
                 <div className="setuMiniTable" style={{ marginTop: 18 }}>

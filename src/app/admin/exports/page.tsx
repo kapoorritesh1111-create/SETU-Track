@@ -143,7 +143,7 @@ export default function AdminExportsPage() {
   return (
     <AppShell
       title="Exports"
-      subtitle="Audit receipts, client export linkage, and paid-state history across payroll operations."
+      subtitle="Receipt history and export linkage across payroll operations."
       right={
         <div className="row" style={{ gap: 10 }}>
           <Button variant="secondary" onClick={load} disabled={loading}>

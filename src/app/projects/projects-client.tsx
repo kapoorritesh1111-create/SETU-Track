@@ -1010,34 +1010,11 @@ function closeCreate() {
           />
         </div>
 
-        <div className="setuSignalGrid" style={{ marginBottom: 14 }}>
-          <div className="setuSignalCard">
-            <div className="setuSignalLabel">Projects at risk</div>
-            <strong>{projectRiskStrip.over.length + projectRiskStrip.near.length}</strong>
-            <span>{projectRiskStrip.over.length} over budget and {projectRiskStrip.near.length} nearing budget limits.</span>
-          </div>
-          <div className="setuSignalCard">
-            <div className="setuSignalLabel">Actual vs budget</div>
-            <strong>{financeSummary.totals.budgetAmount > 0 ? `${Math.min(999, (financeSummary.totals.actualAmount / financeSummary.totals.budgetAmount) * 100).toFixed(0)}%` : '—'}</strong>
-            <span>{financeSummary.totals.budgetAmount > 0 ? `${formatMoney(financeSummary.totals.actualAmount)} of ${formatMoney(financeSummary.totals.budgetAmount)} used` : 'Set budget amounts to unlock spend progress.'}</span>
-          </div>
-          <div className="setuSignalCard">
-            <div className="setuSignalLabel">Hours vs plan</div>
-            <strong>{financeSummary.totals.budgetHours > 0 ? `${Math.min(999, (financeSummary.totals.actualHours / financeSummary.totals.budgetHours) * 100).toFixed(0)}%` : '—'}</strong>
-            <span>{financeSummary.totals.budgetHours > 0 ? `${financeSummary.totals.actualHours.toFixed(1)} / ${financeSummary.totals.budgetHours.toFixed(1)} budgeted hours` : 'Hour budgets are still missing on most projects.'}</span>
-          </div>
-          <div className="setuSignalCard">
-            <div className="setuSignalLabel">No-budget projects</div>
-            <strong>{financeSummary.totals.noBudgetProjects}</strong>
-            <span>These projects are active but cannot yet be monitored for burn or variance.</span>
-          </div>
-        </div>
-
         <div className="card cardPad" style={{ marginBottom: 14 }}>
           <div className="setuCardHeaderRow" style={{ marginBottom: 12 }}>
             <div>
               <div className="setuSectionTitle" style={{ fontSize: 18 }}>Budget risk strip</div>
-              <div className="setuSectionHint">Jump straight into the projects that need budget action, approval tightening, or baseline cleanup.</div>
+              <div className="setuSectionHint">Use one finance strip only, then move into the project workspace below.</div>
             </div>
           </div>
           <div className="setuFocusList">
