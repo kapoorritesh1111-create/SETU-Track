@@ -1641,3 +1641,159 @@ textarea.nativeControl {
   .tsSummaryBarRow,
   .setuMetricGrid { grid-template-columns: 1fr; }
 }
+
+/* Phase 3A shared signal cards */
+.setuSignalGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.setuSignalCard {
+  background: var(--setu-surface);
+  border: 1px solid var(--setu-border);
+  border-radius: 20px;
+  box-shadow: 0 10px 24px rgba(15,26,46,0.05);
+  padding: 16px 18px;
+  display: grid;
+  gap: 8px;
+}
+.setuSignalLabel {
+  color: var(--setu-muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.setuSignalCard strong {
+  font-size: 22px;
+  line-height: 1;
+  color: var(--setu-indigo-900);
+}
+.setuSignalCard span {
+  color: var(--setu-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+html[data-theme="dark"] body {
+  background: linear-gradient(180deg, #081327 0%, var(--setu-bg) 160px, var(--setu-bg) 100%);
+}
+html[data-theme="dark"] .pageHeader,
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .setuSurfaceCard,
+html[data-theme="dark"] .setuMetricCard,
+html[data-theme="dark"] .setuSignalCard,
+html[data-theme="dark"] .setuFilterBar,
+html[data-theme="dark"] .setuHeroCard,
+html[data-theme="dark"] .setuChartCard,
+html[data-theme="dark"] .setuMainCard,
+html[data-theme="dark"] .setuSideCard,
+html[data-theme="dark"] .analyticsPanel {
+  background: rgba(12, 33, 71, 0.94);
+}
+html[data-theme="dark"] .table th {
+  background: rgba(255,255,255,0.04);
+}
+html[data-theme="dark"] .pill.ok { color: #bbf7d0; }
+html[data-theme="dark"] .pill.warn { color: #fde68a; }
+
+@media (max-width: 1180px) {
+  .setuSignalGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 720px) {
+  .setuSignalGrid { grid-template-columns: 1fr; }
+}
+
+.setuNotificationList {
+  display: grid;
+  gap: 12px;
+}
+
+.setuNotificationItem {
+  width: 100%;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(248,250,252,0.9));
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+
+.setuNotificationItem:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+}
+
+.setuNotificationHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.setuNotificationTitle {
+  font-weight: 800;
+  color: rgba(15, 23, 42, 0.96);
+}
+
+.setuNotificationBadge {
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.setuNotificationMeta {
+  margin-left: auto;
+  min-width: 108px;
+  display: grid;
+  gap: 4px;
+  text-align: right;
+  color: rgba(71, 85, 105, 0.95);
+}
+
+.setuNotificationItem.severity-critical,
+.setuNotificationBadge.severity-critical {
+  border-color: rgba(220, 38, 38, 0.22);
+  background: rgba(254, 226, 226, 0.92);
+}
+
+.setuNotificationItem.severity-high,
+.setuNotificationBadge.severity-high {
+  border-color: rgba(245, 158, 11, 0.22);
+  background: rgba(254, 243, 199, 0.92);
+}
+
+.setuNotificationItem.severity-medium,
+.setuNotificationBadge.severity-medium {
+  border-color: rgba(59, 130, 246, 0.18);
+  background: rgba(219, 234, 254, 0.9);
+}
+
+.setuNotificationItem.severity-low,
+.setuNotificationBadge.severity-low,
+.setuNotificationItem.severity-info,
+.setuNotificationBadge.severity-info {
+  border-color: rgba(99, 102, 241, 0.14);
+  background: rgba(224, 231, 255, 0.82);
+}
+
+:root[data-theme="dark"] .setuNotificationItem {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.72));
+  border-color: rgba(148, 163, 184, 0.16);
+}
+
+:root[data-theme="dark"] .setuNotificationTitle {
+  color: rgba(248, 250, 252, 0.96);
+}
+
+:root[data-theme="dark"] .setuNotificationMeta {
+  color: rgba(203, 213, 225, 0.9);
+}
