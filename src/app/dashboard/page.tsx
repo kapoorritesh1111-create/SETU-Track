@@ -58,9 +58,9 @@ export default function DashboardPage() {
 
   const headerRight = (
     <div className="dbHeaderRight">
-      <button className="pill" onClick={() => router.push("/timesheet")}>Enter time</button>
-      {role !== "contractor" ? <button className="pill" onClick={() => router.push("/approvals")}>Approvals</button> : null}
-      <button className="btnPrimary" onClick={() => router.push("/reports/payroll")}>Payroll</button>
+      <button className="pill" onClick={() => router.push("/timesheet")}>{role === "contractor" ? "Open My work" : "Enter time"}</button>
+      {role !== "contractor" ? <button className="pill" onClick={() => router.push("/approvals")}>Approvals</button> : <button className="pill" onClick={() => router.push("/pay/my-pay")}>My Pay</button>}
+      <button className="btnPrimary" onClick={() => router.push(role === "contractor" ? "/timesheet" : "/reports/payroll")}>{role === "contractor" ? "Submit week" : "Payroll"}</button>
     </div>
   );
 

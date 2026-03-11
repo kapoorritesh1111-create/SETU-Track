@@ -679,7 +679,23 @@ function SetuTrackInner() {
 
   const favoriteProjects = projects.filter((project) => favoriteProjectIds.includes(project.id));
 
-  const headerSubtitle = profile ? `${weekRangeLabel(weekStart)} • Role: ${profile.role}` : `${weekRangeLabel(weekStart)}`;
+  const actionNeededCount = weekStats.draft + weekStats.rejected;
+  const readinessState = weekStats.rejected > 0
+    ? "Fix returned entries"
+    : actionNeededCount > 0
+      ? "Finish this week"
+      : weekStats.submitted > 0
+        ? "Waiting for approval"
+        : "Ready to submit";
+  const nextStepLabel = weekStats.rejected > 0
+    ? "Edit rejected lines, save, then submit again."
+    : weekStats.draft > 0
+      ? "Complete remaining draft lines before sending the week for review."
+      : weekStats.submitted > 0
+        ? "No edit needed unless a manager returns an entry for changes."
+        : "Add time as work happens, then submit once the week is complete.";
+
+  const headerSubtitle = profile ? `${weekRangeLabel(weekStart)} • ${readinessState}` : `${weekRangeLabel(weekStart)}`;
 
   const headerRight = (
     <div className="tsHeaderRight">
@@ -810,6 +826,49 @@ function SetuTrackInner() {
         </section>
       ) : null}
 
+      <div className="setuSummaryStrip">
+        <div className="setuSummaryStripItem">
+          <span>What matters now</span>
+          <strong>{readinessState}</strong>
+        </div>
+        <div className="setuSummaryStripItem">
+          <span>Next step</span>
+          <strong>{weekStats.rejected > 0 ? "Edit and resubmit" : weekStats.draft > 0 ? "Complete draft lines" : weekStats.submitted > 0 ? "Watch approvals" : "Keep logging"}</strong>
+        </div>
+        <div className="setuSummaryStripItem">
+          <span>Action needed</span>
+          <strong>{actionNeededCount}</strong>
+        </div>
+        <div className="setuSummaryStripItem">
+          <span>Week total</span>
+          <strong>{weekTotal.toFixed(2)} hrs</strong>
+        </div>
+      </div>
+
+      <div className="card cardPad tsSummary">
+        <div className="tsSummaryRow">
+          <div>
+            <div className="tsSummaryTitle">Work status</div>
+            <div className="tsSummaryValue">{readinessState}</div>
+            <div className="muted tsSummaryHint">{nextStepLabel}</div>
+          </div>
+          <div className="tsSummaryAside">
+            <div className="tsSummaryAsideItem">
+              <span>Approved</span>
+              <strong>{weekStats.approved}</strong>
+            </div>
+            <div className="tsSummaryAsideItem">
+              <span>Submitted</span>
+              <strong>{weekStats.submitted}</strong>
+            </div>
+            <div className="tsSummaryAsideItem">
+              <span>Rejected</span>
+              <strong>{weekStats.rejected}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <section className="tsMetricsGrid">
         <div className="tsMetricCard">
           <div className="tsMetricLabel">Days logged</div>
@@ -832,30 +891,6 @@ function SetuTrackInner() {
           <div className="tsMetricHint">Save drafts anytime. Submit once the week is complete.</div>
         </div>
       </section>
-
-      <div className="card cardPad tsSummary">
-        <div className="tsSummaryRow">
-          <div>
-            <div className="tsSummaryTitle">Submission readiness</div>
-            <div className="tsSummaryValue">{weekStats.draft + weekStats.rejected}</div>
-            <div className="muted tsSummaryHint">draft or rejected line{weekStats.draft + weekStats.rejected === 1 ? "" : "s"} still need attention before final submission.</div>
-          </div>
-          <div className="tsSummaryAside">
-            <div className="tsSummaryAsideItem">
-              <span>Approved</span>
-              <strong>{weekStats.approved}</strong>
-            </div>
-            <div className="tsSummaryAsideItem">
-              <span>Submitted</span>
-              <strong>{weekStats.submitted}</strong>
-            </div>
-            <div className="tsSummaryAsideItem">
-              <span>Rejected</span>
-              <strong>{weekStats.rejected}</strong>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {loadingWeek ? (
         <div className="card cardPad" style={{ marginTop: 14 }}>

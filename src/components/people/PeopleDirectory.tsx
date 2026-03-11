@@ -330,6 +330,12 @@ export default function PeopleDirectory({
     ? contractorRows.reduce((sum, r) => sum + Number(r.hourly_rate ?? 0), 0) / contractorRows.length
     : 0;
   const needsAction = contractorRows.filter((r) => r.is_active && !Number(r.hourly_rate ?? 0)).length;
+  const missingManager = visibleRows.filter((r) => r.role === "contractor" && r.is_active && !r.manager_id).length;
+  const nextPriority = needsAction > 0
+    ? "Complete missing contractor rates before the next payroll cycle."
+    : missingManager > 0
+      ? "Assign managers so approval ownership is clear."
+      : "People setup looks healthy for this role scope.";
 
   const stripItems = [
     {
@@ -423,6 +429,34 @@ export default function PeopleDirectory({
             <div className="statHint">{item.hint}</div>
           </div>
         ))}
+      </div>
+
+      <div className="setuSummaryStrip">
+        <div className="setuSummaryStripItem">
+          <span>What matters now</span>
+          <strong>{needsAction > 0 ? "Rate readiness" : missingManager > 0 ? "Manager coverage" : "Directory healthy"}</strong>
+        </div>
+        <div className="setuSummaryStripItem">
+          <span>Next step</span>
+          <strong>{needsAction > 0 ? "Add missing rates" : missingManager > 0 ? "Assign managers" : "Maintain active roster"}</strong>
+        </div>
+        <div className="setuSummaryStripItem">
+          <span>Missing managers</span>
+          <strong>{missingManager}</strong>
+        </div>
+        <div className="setuSummaryStripItem">
+          <span>Avg contractor rate</span>
+          <strong>{avgRate > 0 ? `$${avgRate.toFixed(0)}/hr` : "—"}</strong>
+        </div>
+      </div>
+
+      <div className="card cardPad" style={{ marginBottom: 12 }}>
+        <div className="setuCardHeaderRow" style={{ marginBottom: 0 }}>
+          <div>
+            <div className="setuSectionTitle" style={{ fontSize: 18 }}>People readiness</div>
+            <div className="setuSectionHint">{nextPriority}</div>
+          </div>
+        </div>
       </div>
 
       {anySelected ? (

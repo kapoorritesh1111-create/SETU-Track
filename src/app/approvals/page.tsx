@@ -687,13 +687,15 @@ useEffect(() => {
         </div>
       ) : visibleGroups.length === 0 ? (
         <div className="card cardPad" style={{ marginTop: 14 }}>
-          <div style={{ fontWeight: 950 }}>Nothing to approve</div>
+          <div style={{ fontWeight: 950 }}>Nothing to review right now</div>
           <div className="muted" style={{ marginTop: 6 }}>
             {!groups.length
-              ? (isAdmin ? "No submitted entries are waiting for review right now." : "No direct-report entries are waiting for review right now.")
+              ? (isAdmin ? "No submitted entries are waiting in the org review queue right now." : "Your direct reports do not have submitted entries waiting for review right now.")
               : scope !== "all"
-                ? "No approval groups match the current filter. Try returning to all approvals."
-                : "The current queue is clear for the selected range."}
+                ? "No approval groups match the current priority filter. Return to all approvals to see the full queue."
+                : showAllPending
+                  ? "The pending approval queue is clear across the last eight weeks."
+                  : "The selected week is clear. Move to another week or switch to all pending if you need more history."}
           </div>
         </div>
       ) : (
@@ -757,9 +759,9 @@ useEffect(() => {
                         className="btn btnPrimary"
                         onClick={() => approveGroup(g)}
                         disabled={busyKey === g.key || isLocked}
-                        title={isLocked ? "Locked pay period" : "Approve"}
+                        title={isLocked ? "Locked pay period" : primaryState === "ready" ? "Approve" : "Approve after review"}
                       >
-                        {busyKey === g.key ? "Working…" : "Approve"}
+                        {busyKey === g.key ? "Working…" : primaryState === "ready" ? "Approve" : "Approve after review"}
                       </button>
                       <ActionMenu
                         ariaLabel="Group actions"

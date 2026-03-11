@@ -1101,7 +1101,7 @@ textarea.nativeControl {
   box-shadow: 0 10px 24px rgba(11,36,88,0.05);
   padding: 18px;
 }
-.analyticsFilterRow { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+.analyticsFilterRow { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
 .analyticsKpis, .analyticsSplit { display: grid; gap: 16px; }
 .analyticsKpis { grid-template-columns: repeat(4, minmax(0,1fr)); }
 .analyticsSplit { grid-template-columns: minmax(0, 1.25fr) minmax(320px, .95fr); }
@@ -1138,7 +1138,7 @@ textarea.nativeControl {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  align-items: end;
+  align-items: flex-end;
 }
 .setuRangeToolbar.isCompact {
   justify-content: flex-end;
@@ -1398,7 +1398,7 @@ textarea.nativeControl {
 .setuWorkspaceTitle { margin: 12px 0 0; font-size: clamp(1.7rem, 2vw, 2.6rem); font-weight: 950; letter-spacing: -.05em; }
 .setuWorkspaceCopy { margin: 10px 0 0; max-width: 62ch; color: rgba(255,255,255,0.8); line-height: 1.65; }
 .setuWorkspaceActions { display: grid; gap: 12px; align-content: start; }
-.setuRangeToolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
+.setuRangeToolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
 .setuRangeToolbar.isCompact .setuField { min-width: 160px; }
 .setuRangeToolbar .setuField span { color: rgba(255,255,255,0.8); }
 .setuRangeToolbar .input { background: rgba(255,255,255,0.96); }

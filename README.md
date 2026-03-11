@@ -76,6 +76,20 @@ See:
 - `docs/PHASE_3A_RELEASE_2026-03-09.md`
 - `docs/PHASE_3A_QA_CHECKLIST_2026-03-09.md`
 
+
+## 2026-03-11 Phase 3D-R1 — Role Workflow + Trust Hardening
+
+Included in this repo package:
+- contractor dashboard now shows clearer action-needed, waiting-approval, and approved-pay states
+- manager dashboard now prioritizes stale approvals, direct-report coverage, and missing rate readiness
+- My Work now explains week readiness and the next step before the line-entry workspace
+- Approvals empty states and CTA language are clearer and more queue-oriented
+- People page now surfaces workforce readiness signals for rates and manager coverage
+
+See:
+- `docs/PHASE_3D_R1_RELEASE_2026-03-11.md`
+- `docs/PHASE_3D_R1_QA_CHECKLIST_2026-03-11.md`
+
 ## Run locally
 
 ```bash
