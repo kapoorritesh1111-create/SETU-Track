@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseService } from "../../../../lib/supabaseServer";
 
-type Role = "admin" | "manager" | "contractor";
+type Role = "owner" | "admin" | "manager" | "contractor";
 
 async function requireAdmin(req: Request) {
   const authHeader = req.headers.get("authorization") || "";
@@ -20,8 +20,8 @@ async function requireAdmin(req: Request) {
     .maybeSingle();
 
   if (callerProfErr) return { ok: false as const, status: 400, error: callerProfErr.message };
-  if (!callerProf?.org_id || callerProf.role !== "admin") {
-    return { ok: false as const, status: 403, error: "Admin only" };
+  if (!callerProf?.org_id || !["owner", "admin"].includes(callerProf.role)) {
+    return { ok: false as const, status: 403, error: "Owner or Super Admin only" };
   }
 
   return { ok: true as const, supa, org_id: callerProf.org_id };
