@@ -5,7 +5,7 @@ import { supabase } from "../../lib/supabaseBrowser";
 import { Search } from "lucide-react";
 import Drawer from "../ui/Drawer";
 import Button from "../ui/Button";
-import FormField from "../ui/FormField";
+import FormField from "../ui/FormField";\nimport { useProfile } from "../../lib/useProfile";
 
 type Role = "owner" | "admin" | "manager" | "contractor";
 
@@ -265,7 +265,11 @@ export default function UserDrawer({
             <div style={{ flex: 1 }}>
               <FormField label="Role" helpText="Managers can see their direct reports." helpMode="tooltip">
                 {({ id, describedBy }) => (
-                  <select id={id} aria-describedby={describedBy} className="input" value={role} onChange={(e) => setRole(e.target.value as Role)}>
+                  <select id={id} aria-describedby={describedBy} className="input"
+                    value={role}
+                    disabled={user?.role === "owner" && !canManageOwners}
+                    onChange={(e) => setRole(e.target.value as Role)}
+                  >
                     <option value="contractor">Contractor</option>
                     <option value="manager">Manager</option>
                   </select>
