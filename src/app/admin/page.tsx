@@ -13,7 +13,7 @@ import { supabase } from "../../lib/supabaseBrowser";
 import { useProfile } from "../../lib/useProfile";
 import { UserPlus } from "lucide-react";
 
-type Role = "admin" | "manager" | "contractor";
+type Role = "owner" | "admin" | "manager" | "contractor";
 type ManagerRow = { id: string; full_name: string | null; role: Role };
 type ProjectRow = { id: string; name: string; is_active: boolean };
 
@@ -32,7 +32,7 @@ export default function AdminPage() {
 
 function AdminInner() {
   const { loading: profLoading, userId, profile, error: profErr } = useProfile();
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = profile?.role === "owner" || profile?.role === "admin";
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -75,7 +75,7 @@ const pageRight = isAdmin ? (
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [hourlyRate, setHourlyRate] = useState<number>(0);
-  const [inviteRole, setInviteRole] = useState<Exclude<Role, "admin">>("contractor");
+  const [inviteRole, setInviteRole] = useState<Role>("contractor");
 
   const [managers, setManagers] = useState<ManagerRow[]>([]);
   const [managerId, setManagerId] = useState<string>("");
