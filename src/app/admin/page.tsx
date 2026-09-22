@@ -138,7 +138,7 @@ const pageRight = isAdmin ? (
       .from("profiles")
       .select("id, full_name, role")
       .eq("org_id", profile.org_id)
-      .in("role", ["admin", "manager"])
+      .in("role", ["owner", "admin", "manager"])
       .eq("is_active", true)
       .order("role", { ascending: true })
       .order("full_name", { ascending: true })
