@@ -35,6 +35,9 @@ export default function UserDrawer({
   managers: { id: string; full_name: string | null }[];
   onSaved: () => void;
 }) {
+  const { profile: currentProfile } = useProfile();
+  const canManageOwners = currentProfile?.role === "owner";
+
   const [activeTab, setActiveTab] = useState<"profile" | "projects">("profile");
 
   const [saving, setSaving] = useState(false);
@@ -272,6 +275,8 @@ export default function UserDrawer({
                   >
                     <option value="contractor">Contractor</option>
                     <option value="manager">Manager</option>
+                    <option value="admin">Super Admin</option>
+                    <option value="owner" disabled={!canManageOwners}>Owner</option>
                   </select>
                 )}
               </FormField>
