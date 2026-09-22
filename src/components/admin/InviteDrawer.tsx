@@ -4,6 +4,7 @@ import { useId, useMemo } from "react";
 import { Search } from "lucide-react";
 import Drawer from "../ui/Drawer";
 import Button from "../ui/Button";
+import { useProfile } from "../../lib/useProfile";
 
 type Role = "owner" | "admin" | "manager" | "contractor";
 type ManagerRow = { id: string; full_name: string | null; role: Role };
@@ -45,6 +46,8 @@ export default function InviteDrawer(props: {
   busy: boolean;
   onSend: (e: React.FormEvent) => void;
 }) {
+  const { profile } = useProfile();
+  const canInviteOwners = profile?.role === "owner";
   const filteredProjects = useMemo(() => {
     const needle = normalize(props.projectQuery);
     if (!needle) return props.projects;
@@ -114,7 +117,7 @@ export default function InviteDrawer(props: {
                   <option value="contractor">Contractor</option>
                   <option value="manager">Manager</option>
                   <option value="admin">Super Admin</option>
-                  <option value="owner">Owner</option>
+                  <option value="owner" disabled={!canInviteOwners}>Owner</option>
                 </select>
               </div>
 
