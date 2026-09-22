@@ -16,7 +16,7 @@ import Button from "../../../components/ui/Button";
 import ActionMenu from "../../../components/ui/ActionMenu";
 import SavedViews from "../../../components/ui/SavedViews";
 
-type Role = "admin" | "manager" | "contractor";
+type Role = "owner" | "admin" | "manager" | "contractor";
 type ManagerLite = { id: string; full_name: string | null };
 
 function fmtDate(iso: string | null) {
@@ -29,7 +29,7 @@ function fmtDate(iso: string | null) {
 export default function AdminUsersPage() {
   const router = useRouter();
   const { profile } = useProfile();
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = profile?.role === "owner" || profile?.role === "admin";
 
   const pageRight = isAdmin ? (
     <Button variant="primary" onClick={() => router.push("/admin?invite=1")}>
@@ -218,7 +218,7 @@ function UsersDirectory() {
                 style={{ width: 160 }}
               >
                 <option value="all">All roles</option>
-                <option value="admin">Admin</option>
+                <option value="owner">Owner</option>\n                <option value="admin">Super Admin</option>
                 <option value="manager">Manager</option>
                 <option value="contractor">Contractor</option>
               </select>
