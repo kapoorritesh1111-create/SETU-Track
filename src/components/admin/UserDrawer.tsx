@@ -5,7 +5,8 @@ import { supabase } from "../../lib/supabaseBrowser";
 import { Search } from "lucide-react";
 import Drawer from "../ui/Drawer";
 import Button from "../ui/Button";
-import FormField from "../ui/FormField";\nimport { useProfile } from "../../lib/useProfile";
+import FormField from "../ui/FormField";
+import { useProfile } from "../../lib/useProfile";
 
 type Role = "owner" | "admin" | "manager" | "contractor";
 
