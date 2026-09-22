@@ -40,7 +40,7 @@ export default function PayrollRunsPage() {
   const [loadedAt, setLoadedAt] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const canView = profile?.role === "admin";
+  const canView = profile?.role === "owner" || profile?.role === "admin";
 
   async function downloadFromApi(path: string, fallbackName: string) {
     const token = await getAccessToken();

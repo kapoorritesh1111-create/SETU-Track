@@ -67,7 +67,7 @@ export default function DashboardPage() {
   return (
     <RequireOnboarding>
       <AppShell title="Dashboard" subtitle={subtitle} right={headerRight}>
-        {role === "admin" ? (
+        {role === "owner" || role === "admin" ? (
           <AdminDashboard orgId={profile.org_id} userId={userId} />
         ) : role === "manager" ? (
           <ManagerDashboard orgId={profile.org_id} userId={userId} />

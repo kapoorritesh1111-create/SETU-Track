@@ -18,7 +18,7 @@ export default function AdminBillingPage() {
 
 function AdminBillingInner() {
   const { profile, loading } = useProfile();
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = profile?.role === "owner" || profile?.role === "admin";
 
   if (loading) return null;
 

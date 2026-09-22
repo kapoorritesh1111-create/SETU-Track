@@ -36,7 +36,7 @@ function AdminActivityInner() {
   const [busy, setBusy] = useState(true);
 
   useEffect(() => {
-    if (!profile?.org_id || profile?.role !== "admin") return;
+    if (!profile?.org_id || !["owner", "admin"].includes(profile?.role || "")) return;
     let mounted = true;
     (async () => {
       setBusy(true);

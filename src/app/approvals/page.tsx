@@ -111,7 +111,7 @@ function ApprovalsInner() {
   const scope = searchParams.get("scope") || "all";
   const { loading: profLoading, profile, userId, error: profErr } = useProfile();
 
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = profile?.role === "owner" || profile?.role === "admin";
   const isManager = profile?.role === "manager";
   const isManagerOrAdmin = isAdmin || isManager;
 
