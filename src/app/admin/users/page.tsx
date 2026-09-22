@@ -348,7 +348,7 @@ function UsersDirectory() {
               </div>
             ),
           },
-          { key: "role", header: "Role", width: 140, cell: (r) => <span style={{ textTransform: "capitalize", fontWeight: 900 }}>{r.role}</span> },
+          { key: "role", header: "Role", width: 140, cell: (r) => <span style={{ fontWeight: 900 }}>{r.role === "owner" ? "Owner" : r.role === "admin" ? "Super Admin" : r.role === "manager" ? "Manager" : "Contractor"}</span> },
           {
             key: "manager",
             header: "Manager",
