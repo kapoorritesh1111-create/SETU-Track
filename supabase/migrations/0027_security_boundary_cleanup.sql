@@ -31,6 +31,21 @@ revoke execute on function public.set_time_entry_snapshots() from public;
 revoke execute on function public.set_time_entry_updated_meta() from public;
 revoke execute on function public.touch_org_settings() from public;
 
+revoke execute on function public.admin_dashboard_summary(date,date) from anon;
+revoke execute on function public.close_payroll_period(date,date) from anon;
+revoke execute on function public.current_org_id() from anon;
+revoke execute on function public.current_role() from anon;
+revoke execute on function public.current_user_role() from anon;
+revoke execute on function public.enforce_time_entry_workflow() from anon;
+revoke execute on function public.handle_new_user() from anon;
+revoke execute on function public.is_admin() from anon;
+revoke execute on function public.is_admin_or_manager() from anon;
+revoke execute on function public.mark_payroll_run_paid(uuid,boolean,text) from anon;
+revoke execute on function public.payroll_close_blockers(date,date) from anon;
+revoke execute on function public.set_time_entry_snapshots() from anon;
+revoke execute on function public.set_time_entry_updated_meta() from anon;
+revoke execute on function public.touch_org_settings() from anon;
+
 grant execute on function public.admin_dashboard_summary(date,date) to authenticated, service_role;
 grant execute on function public.close_payroll_period(date,date) to authenticated, service_role;
 grant execute on function public.current_org_id() to authenticated, service_role;
