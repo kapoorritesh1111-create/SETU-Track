@@ -528,7 +528,7 @@ export default function PeopleDirectory({
                   const canAdminEdit = isAdmin;
                   const canManagerEditReport = isManager && r.manager_id === userId;
                   const canEditName = canAdminEdit || canEditSelfName || canManagerEditReport;
-                  const canEditRole = isAdmin;
+                  const canEditRole = isOwner || (isAdmin && r.role !== "owner");
                   const canEditManager = isAdmin;
                   const canEditRate = isAdmin || canManagerEditReport;
                   const canEditStatus = isAdmin;
