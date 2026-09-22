@@ -5,7 +5,7 @@ import { Search } from "lucide-react";
 import Drawer from "../ui/Drawer";
 import Button from "../ui/Button";
 
-type Role = "admin" | "manager" | "contractor";
+type Role = "owner" | "admin" | "manager" | "contractor";
 type ManagerRow = { id: string; full_name: string | null; role: Role };
 type ProjectRow = { id: string; name: string; is_active: boolean };
 
@@ -23,8 +23,8 @@ export default function InviteDrawer(props: {
   fullName: string;
   setFullName: (v: string) => void;
 
-  inviteRole: Exclude<Role, "admin">;
-  setInviteRole: (v: Exclude<Role, "admin">) => void;
+  inviteRole: Role;
+  setInviteRole: (v: Role) => void;
 
   hourlyRate: number;
   setHourlyRate: (v: number) => void;
@@ -113,6 +113,8 @@ export default function InviteDrawer(props: {
                 >
                   <option value="contractor">Contractor</option>
                   <option value="manager">Manager</option>
+                  <option value="admin">Super Admin</option>
+                  <option value="owner">Owner</option>
                 </select>
               </div>
 
