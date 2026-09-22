@@ -109,10 +109,10 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
         label: "Admin",
         items: [
           { label: "Notifications", href: "/admin/notifications", icon: <BellRing size={16} />, hideIf: (r: string) => r === "contractor" },
-          { label: "Activity", href: "/admin/activity", icon: <Shield size={16} />, hideIf: (r: string) => r !== "admin" },
-          { label: "Exports", href: "/admin/exports", icon: <Shield size={16} />, hideIf: (r: string) => r !== "admin" },
-          { label: "Org Settings", href: "/admin/org-settings", icon: <Building2 size={16} />, hideIf: (r: string) => r !== "admin" },
-          { label: "Billing", href: "/admin/billing", icon: <CreditCard size={16} />, hideIf: (r: string) => r !== "admin" },
+          { label: "Activity", href: "/admin/activity", icon: <Shield size={16} />, hideIf: (r: string) => r !== "admin" && r !== "owner" },
+          { label: "Exports", href: "/admin/exports", icon: <Shield size={16} />, hideIf: (r: string) => r !== "admin" && r !== "owner" },
+          { label: "Org Settings", href: "/admin/org-settings", icon: <Building2 size={16} />, hideIf: (r: string) => r !== "admin" && r !== "owner" },
+          { label: "Billing", href: "/admin/billing", icon: <CreditCard size={16} />, hideIf: (r: string) => r !== "admin" && r !== "owner" },
         ],
       },
     ];
