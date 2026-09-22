@@ -218,7 +218,8 @@ function UsersDirectory() {
                 style={{ width: 160 }}
               >
                 <option value="all">All roles</option>
-                <option value="owner">Owner</option>\n                <option value="admin">Super Admin</option>
+                <option value="owner">Owner</option>
+                <option value="admin">Super Admin</option>
                 <option value="manager">Manager</option>
                 <option value="contractor">Contractor</option>
               </select>
