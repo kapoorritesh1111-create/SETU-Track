@@ -7,7 +7,7 @@ import Drawer from "../ui/Drawer";
 import Button from "../ui/Button";
 import FormField from "../ui/FormField";
 
-type Role = "admin" | "manager" | "contractor";
+type Role = "owner" | "admin" | "manager" | "contractor";
 
 export type UserRow = {
   id: string;
