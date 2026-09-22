@@ -39,7 +39,7 @@ export default function AdminNotificationsPage() {
   const [areaFilter, setAreaFilter] = useState<AreaFilter>("all");
   const [range, setRange] = useState(monthRange());
 
-  const isManagerOrAdmin = profile?.role === "admin" || profile?.role === "manager";
+  const isManagerOrAdmin = profile?.role === "owner" || profile?.role === "admin" || profile?.role === "manager";
 
   async function load() {
     if (!profile?.org_id || !userId || !isManagerOrAdmin) return;
