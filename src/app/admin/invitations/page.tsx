@@ -50,7 +50,7 @@ export default function AdminInvitationsPage() {
 function InvitationsInner() {
   const router = useRouter();
   const { profile } = useProfile();
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = profile?.role === "owner" || profile?.role === "admin";
 
   const pageRight = isAdmin ? (
     <Button variant="primary" onClick={() => router.push("/admin?invite=1")}>

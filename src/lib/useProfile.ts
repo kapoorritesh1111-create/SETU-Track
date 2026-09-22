@@ -8,7 +8,7 @@ export type Profile = {
   id: string;
   org_id: string;
   full_name: string;
-  role: "admin" | "manager" | "contractor";
+  role: "owner" | "admin" | "manager" | "contractor";
   hourly_rate: number | null;
   is_active: boolean;
   manager_id: string | null;

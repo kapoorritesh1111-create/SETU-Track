@@ -9,7 +9,7 @@ import ToolbarBlock from "../ui/ToolbarBlock";
 import { EmptyState } from "../ui/EmptyState";
 import Button from "../ui/Button";
 
-type Role = "admin" | "manager" | "contractor";
+type Role = "owner" | "admin" | "manager" | "contractor";
 
 type ProfileRow = {
   id: string;
@@ -59,7 +59,8 @@ export default function PeopleDirectory({
 }) {
   const { profile, userId, loading, refresh } = useProfile();
 
-  const isAdmin = profile?.role === "admin";
+  const isOwner = profile?.role === "owner";
+  const isAdmin = isOwner || profile?.role === "admin";
   const isManager = profile?.role === "manager";
 
   const [rows, setRows] = useState<ProfileRow[]>([]);
@@ -379,7 +380,8 @@ export default function PeopleDirectory({
             <div className="row" style={{ gap: 10, flexWrap: "wrap", alignItems: "center" }}>
               <select className="select" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value as Role | "all")} aria-label="Role filter" style={{ width: 160 }}>
                 <option value="all">All roles</option>
-                <option value="admin">Admins</option>
+                <option value="owner">Owners</option>
+                <option value="admin">Super Admins</option>
                 <option value="manager">Managers</option>
                 <option value="contractor">Contractors</option>
               </select>
@@ -528,7 +530,7 @@ export default function PeopleDirectory({
                   const canAdminEdit = isAdmin;
                   const canManagerEditReport = isManager && r.manager_id === userId;
                   const canEditName = canAdminEdit || canEditSelfName || canManagerEditReport;
-                  const canEditRole = isAdmin;
+                  const canEditRole = isOwner || (isAdmin && r.role !== "owner");
                   const canEditManager = isAdmin;
                   const canEditRate = isAdmin || canManagerEditReport;
                   const canEditStatus = isAdmin;

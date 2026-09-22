@@ -11,9 +11,9 @@ import InviteDrawer from "../../components/admin/InviteDrawer";
 import Button from "../../components/ui/Button";
 import { supabase } from "../../lib/supabaseBrowser";
 import { useProfile } from "../../lib/useProfile";
-import { UserPlus } from "lucide-react";
+import { Building2, UserPlus } from "lucide-react";
 
-type Role = "admin" | "manager" | "contractor";
+type Role = "owner" | "admin" | "manager" | "contractor";
 type ManagerRow = { id: string; full_name: string | null; role: Role };
 type ProjectRow = { id: string; name: string; is_active: boolean };
 
@@ -32,13 +32,14 @@ export default function AdminPage() {
 
 function AdminInner() {
   const { loading: profLoading, userId, profile, error: profErr } = useProfile();
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = profile?.role === "owner" || profile?.role === "admin";
 
   const router = useRouter();
   const searchParams = useSearchParams();
   const inviteParam = searchParams.get("invite");
 
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
 
 
 // Open invite drawer when URL has ?invite=1 (enables consistent primary action from other pages)
@@ -65,17 +66,47 @@ function closeInvite() {
   }
 }
 
+useEffect(() => {
+  if (!isAdmin) {
+    setIsPlatformAdmin(false);
+    return;
+  }
+
+  let active = true;
+  (async () => {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) return;
+    const res = await fetch("/api/admin/organizations", {
+      headers: { authorization: `Bearer ${token}` },
+    });
+    if (active) setIsPlatformAdmin(res.ok);
+  })();
+
+  return () => {
+    active = false;
+  };
+}, [isAdmin]);
+
 const pageRight = isAdmin ? (
-  <Button variant="primary" onClick={openInvite}>
-    <UserPlus size={16} style={{ marginRight: 8 }} />
-    Invite user
-  </Button>
+  <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+    {isPlatformAdmin ? (
+      <Button onClick={() => router.push("/admin/organizations")}>
+        <Building2 size={16} style={{ marginRight: 8 }} />
+        Organizations
+      </Button>
+    ) : null}
+    <Button variant="primary" onClick={openInvite}>
+      <UserPlus size={16} style={{ marginRight: 8 }} />
+      Invite user
+    </Button>
+  </div>
 ) : null;
 
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [hourlyRate, setHourlyRate] = useState<number>(0);
-  const [inviteRole, setInviteRole] = useState<Exclude<Role, "admin">>("contractor");
+  const [inviteRole, setInviteRole] = useState<Role>("contractor");
 
   const [managers, setManagers] = useState<ManagerRow[]>([]);
   const [managerId, setManagerId] = useState<string>("");
@@ -107,7 +138,7 @@ const pageRight = isAdmin ? (
       .from("profiles")
       .select("id, full_name, role")
       .eq("org_id", profile.org_id)
-      .in("role", ["admin", "manager"])
+      .in("role", ["owner", "admin", "manager"])
       .eq("is_active", true)
       .order("role", { ascending: true })
       .order("full_name", { ascending: true })

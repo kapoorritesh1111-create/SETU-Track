@@ -1,68 +1,53 @@
 // src/app/api/admin/invitations/route.ts
 import { NextResponse } from "next/server";
-import { supabaseService } from "../../../../lib/supabaseServer";
+import { requireRole } from "../../../../lib/api/gates";
 
-async function requireAdmin(req: Request) {
-  const authHeader = req.headers.get("authorization") || "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-  if (!token) return { ok: false as const, status: 401, error: "Missing auth token" };
-
-  const supa = supabaseService();
-
-  const { data: caller, error: callerErr } = await supa.auth.getUser(token);
-  if (callerErr || !caller?.user) {
-    return { ok: false as const, status: 401, error: callerErr?.message || "Unauthorized" };
-  }
-
-  const { data: callerProf, error: callerProfErr } = await supa
-    .from("profiles")
-    .select("id, org_id, role")
-    .eq("id", caller.user.id)
-    .maybeSingle();
-
-  if (callerProfErr) return { ok: false as const, status: 400, error: callerProfErr.message };
-  if (!callerProf?.org_id || callerProf.role !== "admin") {
-    return { ok: false as const, status: 403, error: "Admin only" };
-  }
-
-  return { ok: true as const, supa, org_id: callerProf.org_id };
+function siteUrl() {
+  return (
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.NEXT_PUBLIC_SETUE_URL ||
+    "https://setutrack.com"
+  ).replace(/\/$/, "");
 }
 
 export async function GET(req: Request) {
   try {
-    const gate = await requireAdmin(req);
+    const gate = await requireRole(req, ["owner", "admin"], "id, org_id, role");
     if (!gate.ok) return NextResponse.json({ ok: false, error: gate.error }, { status: gate.status });
 
     const { supa } = gate;
+    const { data: profiles, error: profileErr } = await supa
+      .from("profiles")
+      .select("id")
+      .eq("org_id", gate.profile.org_id);
 
+    if (profileErr) return NextResponse.json({ ok: false, error: profileErr.message }, { status: 400 });
+
+    const allowedIds = new Set((profiles ?? []).map((p: any) => p.id));
     const { data, error } = await supa.auth.admin.listUsers({ page: 1, perPage: 1000 });
     if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
 
-    const users = (data?.users ?? []).map((u: any) => {
-      const email = u.email || "";
-      const created_at = u.created_at || null;
-      const last_sign_in_at = u.last_sign_in_at || null;
-      const email_confirmed_at = u.email_confirmed_at || u.confirmed_at || null;
+    const users = (data?.users ?? [])
+      .filter((u: any) => allowedIds.has(u.id))
+      .map((u: any) => {
+        const created_at = u.created_at || null;
+        const last_sign_in_at = u.last_sign_in_at || null;
+        const email_confirmed_at = u.email_confirmed_at || u.confirmed_at || null;
+        const status = last_sign_in_at || email_confirmed_at ? "active" : "pending";
+        return {
+          id: u.id,
+          email: u.email || "",
+          status,
+          invited_at: u.invited_at || created_at,
+          created_at,
+          last_sign_in_at,
+          email_confirmed_at,
+        };
+      });
 
-      // ✅ More reliable: if never signed in AND not confirmed -> pending
-      const status = last_sign_in_at || email_confirmed_at ? "active" : "pending";
-
-      return {
-        id: u.id,
-        email,
-        status,
-        created_at,
-        last_sign_in_at,
-        email_confirmed_at,
-      };
-    });
-
-    // Pending first, then newest created
     users.sort((a: any, b: any) => {
       if (a.status !== b.status) return a.status === "pending" ? -1 : 1;
-      const ta = new Date(a.created_at || 0).getTime();
-      const tb = new Date(b.created_at || 0).getTime();
-      return tb - ta;
+      return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
     });
 
     return NextResponse.json({ ok: true, users });
@@ -73,23 +58,29 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const gate = await requireAdmin(req);
+    const gate = await requireRole(req, ["owner", "admin"], "id, org_id, role");
     if (!gate.ok) return NextResponse.json({ ok: false, error: gate.error }, { status: gate.status });
 
-    const { supa } = gate;
-
     const body = await req.json().catch(() => null);
-    if (!body) return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
-
-    const email = String(body.email || "").trim().toLowerCase();
+    const email = String(body?.email || "").trim().toLowerCase();
     if (!email) return NextResponse.json({ ok: false, error: "Email required" }, { status: 400 });
 
-    const redirectTo = (`${process.env.NEXT_PUBLIC_SETUE_URL || ""}/auth/callback`).trim() || undefined;
+    const { data: authList, error: listErr } = await gate.supa.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    if (listErr) return NextResponse.json({ ok: false, error: listErr.message }, { status: 400 });
 
-    const { data, error } = await supa.auth.admin.generateLink({
+    const user = (authList?.users ?? []).find((u: any) => String(u.email || "").toLowerCase() === email);
+    if (!user) return NextResponse.json({ ok: false, error: "Invitation user not found" }, { status: 404 });
+
+    const { data: profile } = await gate.supa.from("profiles").select("org_id").eq("id", user.id).maybeSingle();
+    if (profile?.org_id !== gate.profile.org_id) {
+      return NextResponse.json({ ok: false, error: "Invitation does not belong to this organization" }, { status: 403 });
+    }
+
+    const redirectTo = `${siteUrl()}/auth/callback`;
+    const { data, error } = await gate.supa.auth.admin.generateLink({
       type: "invite",
       email,
-      options: redirectTo ? { redirectTo } : undefined,
+      options: { redirectTo },
     } as any);
 
     if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
@@ -105,22 +96,35 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    const gate = await requireAdmin(req);
+    const gate = await requireRole(req, ["owner", "admin"], "id, org_id, role");
     if (!gate.ok) return NextResponse.json({ ok: false, error: gate.error }, { status: gate.status });
 
-    const { supa, org_id } = gate;
-
     const body = await req.json().catch(() => null);
-    if (!body) return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
-
-    const user_id = String(body.user_id || "").trim();
+    const user_id = String(body?.user_id || "").trim();
     if (!user_id) return NextResponse.json({ ok: false, error: "user_id required" }, { status: 400 });
 
-    await supa.from("project_members").delete().eq("org_id", org_id).eq("user_id", user_id);
-    await supa.from("time_entries").delete().eq("org_id", org_id).eq("user_id", user_id);
-    await supa.from("profiles").delete().eq("org_id", org_id).eq("id", user_id);
+    const { data: target, error: targetErr } = await gate.supa
+      .from("profiles")
+      .select("id, org_id, role")
+      .eq("id", user_id)
+      .maybeSingle();
 
-    const { error } = await supa.auth.admin.deleteUser(user_id);
+    if (targetErr) return NextResponse.json({ ok: false, error: targetErr.message }, { status: 400 });
+    if (!target || target.org_id !== gate.profile.org_id) {
+      return NextResponse.json({ ok: false, error: "User does not belong to this organization" }, { status: 403 });
+    }
+    if (target.role === "owner" && gate.profile.role !== "owner") {
+      return NextResponse.json({ ok: false, error: "Only an Owner can cancel an Owner invitation" }, { status: 403 });
+    }
+    if (target.id === gate.profile.id) {
+      return NextResponse.json({ ok: false, error: "You cannot cancel your own account" }, { status: 400 });
+    }
+
+    await gate.supa.from("project_members").delete().eq("org_id", gate.profile.org_id).eq("user_id", user_id);
+    await gate.supa.from("time_entries").delete().eq("org_id", gate.profile.org_id).eq("user_id", user_id);
+    await gate.supa.from("profiles").delete().eq("org_id", gate.profile.org_id).eq("id", user_id);
+
+    const { error } = await gate.supa.auth.admin.deleteUser(user_id);
     if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
 
     return NextResponse.json({ ok: true });

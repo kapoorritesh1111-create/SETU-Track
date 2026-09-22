@@ -51,9 +51,9 @@ export async function requireRole<TProfile extends Record<string, any> = any>(
 
 export async function requireAdmin(req: Request) {
   // Include full_name for audit receipts and export event snapshots.
-  return requireRole(req, ["admin"], "id, org_id, role, full_name");
+  return requireRole(req, ["owner", "admin"], "id, org_id, role, full_name");
 }
 
 export async function requireManagerOrAdmin(req: Request) {
-  return requireRole(req, ["admin", "manager"], "id, org_id, role, full_name");
+  return requireRole(req, ["owner", "admin", "manager"], "id, org_id, role, full_name");
 }

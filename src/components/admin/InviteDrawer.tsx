@@ -4,8 +4,9 @@ import { useId, useMemo } from "react";
 import { Search } from "lucide-react";
 import Drawer from "../ui/Drawer";
 import Button from "../ui/Button";
+import { useProfile } from "../../lib/useProfile";
 
-type Role = "admin" | "manager" | "contractor";
+type Role = "owner" | "admin" | "manager" | "contractor";
 type ManagerRow = { id: string; full_name: string | null; role: Role };
 type ProjectRow = { id: string; name: string; is_active: boolean };
 
@@ -23,8 +24,8 @@ export default function InviteDrawer(props: {
   fullName: string;
   setFullName: (v: string) => void;
 
-  inviteRole: Exclude<Role, "admin">;
-  setInviteRole: (v: Exclude<Role, "admin">) => void;
+  inviteRole: Role;
+  setInviteRole: (v: Role) => void;
 
   hourlyRate: number;
   setHourlyRate: (v: number) => void;
@@ -45,6 +46,8 @@ export default function InviteDrawer(props: {
   busy: boolean;
   onSend: (e: React.FormEvent) => void;
 }) {
+  const { profile } = useProfile();
+  const canInviteOwners = profile?.role === "owner";
   const filteredProjects = useMemo(() => {
     const needle = normalize(props.projectQuery);
     if (!needle) return props.projects;
@@ -113,6 +116,8 @@ export default function InviteDrawer(props: {
                 >
                   <option value="contractor">Contractor</option>
                   <option value="manager">Manager</option>
+                  <option value="admin">Super Admin</option>
+                  <option value="owner" disabled={!canInviteOwners}>Owner</option>
                 </select>
               </div>
 

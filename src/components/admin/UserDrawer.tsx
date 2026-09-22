@@ -6,8 +6,9 @@ import { Search } from "lucide-react";
 import Drawer from "../ui/Drawer";
 import Button from "../ui/Button";
 import FormField from "../ui/FormField";
+import { useProfile } from "../../lib/useProfile";
 
-type Role = "admin" | "manager" | "contractor";
+type Role = "owner" | "admin" | "manager" | "contractor";
 
 export type UserRow = {
   id: string;
@@ -35,6 +36,9 @@ export default function UserDrawer({
   managers: { id: string; full_name: string | null }[];
   onSaved: () => void;
 }) {
+  const { profile: currentProfile } = useProfile();
+  const canManageOwners = currentProfile?.role === "owner";
+
   const [activeTab, setActiveTab] = useState<"profile" | "projects">("profile");
 
   const [saving, setSaving] = useState(false);
@@ -265,9 +269,15 @@ export default function UserDrawer({
             <div style={{ flex: 1 }}>
               <FormField label="Role" helpText="Managers can see their direct reports." helpMode="tooltip">
                 {({ id, describedBy }) => (
-                  <select id={id} aria-describedby={describedBy} className="input" value={role} onChange={(e) => setRole(e.target.value as Role)}>
+                  <select id={id} aria-describedby={describedBy} className="input"
+                    value={role}
+                    disabled={user?.role === "owner" && !canManageOwners}
+                    onChange={(e) => setRole(e.target.value as Role)}
+                  >
                     <option value="contractor">Contractor</option>
                     <option value="manager">Manager</option>
+                    <option value="admin">Super Admin</option>
+                    <option value="owner" disabled={!canManageOwners}>Owner</option>
                   </select>
                 )}
               </FormField>

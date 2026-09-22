@@ -40,7 +40,7 @@ export default function AdminOrgSettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [settings, setSettings] = useState<OrgSettings>(DEFAULTS);
 
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = profile?.role === "owner" || profile?.role === "admin";
 
   useEffect(() => {
     let alive = true;
@@ -123,7 +123,7 @@ export default function AdminOrgSettingsPage() {
         <AppShell title="Org Settings" subtitle="Admin only">
           <div className="card cardPad" style={{ maxWidth: 980 }}>
             <div className="h2">Access denied</div>
-            <div className="muted">Only admins can edit organization settings.</div>
+            <div className="muted">Only Owners and Super Admins can edit organization settings.</div>
           </div>
         </AppShell>
       </RequireOnboarding>

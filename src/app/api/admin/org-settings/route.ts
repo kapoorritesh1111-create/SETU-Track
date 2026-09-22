@@ -7,7 +7,7 @@ const SELECT =
   "org_id, company_name, legal_name, logo_url, accent_color, invoice_header_json, invoice_footer_text, default_currency, updated_at, updated_by";
 
 export async function GET(req: Request) {
-  const gate = await requireRole(req, ["admin"], "id, org_id, role");
+  const gate = await requireRole(req, ["owner", "admin"], "id, org_id, role");
   if (!gate.ok) return NextResponse.json({ error: gate.error }, { status: gate.status });
 
   const { data, error } = await gate.supa
