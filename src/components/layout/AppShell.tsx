@@ -53,7 +53,8 @@ function initials(name?: string) {
 
 function roleLabel(role?: string) {
   if (!role) return "User";
-  if (role === "admin") return "Admin";
+  if (role === "owner") return "Owner";
+  if (role === "admin") return "Super Admin";
   if (role === "manager") return "Manager";
   if (role === "contractor") return "Contractor";
   return role;
@@ -77,7 +78,7 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
   const role = profile?.role || "user";
   const fullName = profile?.full_name || "User";
   const orgName = profile?.org_name || "SETU GROUP";
-  const isAdmin = role === "admin";
+  const isAdmin = role === "owner" || role === "admin";
 
   const navSections: NavSection[] = useMemo(() => {
     const sections: NavSection[] = [
@@ -101,7 +102,7 @@ export default function AppShell({ title, subtitle, right, children }: Props) {
         items: [
           { label: "Payroll", href: "/reports/payroll", icon: <BadgeDollarSign size={16} />, hideIf: (r: string) => r === "contractor" },
           { label: "Analytics", href: "/analytics", icon: <ChartColumnBig size={16} />, hideIf: (r: string) => r === "contractor" },
-          { label: "Payroll runs", href: "/reports/payroll-runs", icon: <FileText size={16} />, hideIf: (r: string) => r !== "admin" },
+          { label: "Payroll runs", href: "/reports/payroll-runs", icon: <FileText size={16} />, hideIf: (r: string) => r !== "admin" && r !== "owner" },
         ],
       },
       {
